@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevCord | Comunidade Developer</title>
+    <style>
+        :root {
+            --dark-0: #111214;
+            --dark-1: #1e1f22;
+            --dark-2: #2b2d31;
+            --dark-3: #313338;
+            --text: #dbdee1;
+            --accent: #5865f2;
+            --header-height: 48px;
+        }
+
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; background-color: var(--dark-3); color: var(--text); overflow: hidden; }
+
+        /* Estilo da Tela de Login */
+        #auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--dark-1); display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .auth-card {
+            background: var(--dark-2); padding: 32px; border-radius: 8px; width: 100%; max-width: 400px; text-align: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .auth-card h2 { margin-bottom: 20px; color: white; }
+        .auth-card input {
+            width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 4px; border: none;
+            background: var(--dark-0); color: white; box-sizing: border-box;
+        }
+        .auth-btn {
+            width: 100%; padding: 12px; background: var(--accent); color: white; border: none;
+            border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 10px;
+        }
+        .auth-btn:hover { background: #4752c4; }
+        .toggle-auth { font-size: 0.8em; color: #00a8fc; cursor: pointer; text-decoration: none; }
+
+        /* Layout Main App */
+        .app-container { display: flex; height: 100vh; width: 100vw; visibility: hidden; } /* Escondido até logar */
+
+        .sidebar-servers { width: 72px; background-color: var(--dark-1); display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 8px; }
+        .server-icon { width: 48px; height: 48px; background-color: var(--dark-3); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; color: var(--accent); font-weight: bold; }
+        .server-icon:hover { border-radius: 30%; background-color: var(--accent); color: white; }
+
+        .sidebar-channels { width: 240px; background-color: var(--dark-2); display: flex; flex-direction: column; }
+        .channel-header { height: var(--header-height); display: flex; align-items: center; padding: 0 16px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2); justify-content: space-between; }
+        .logout-btn { font-size: 0.7em; cursor: pointer; color: #f23f42; }
+
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; }
+        .chat-header { height: var(--header-height); display: flex; align-items: center; padding: 0 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); font-weight: bold; }
+        #message-container { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        
+        .message { display: flex; gap: 15px; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; flex-shrink: 0; }
+        .message-content b { color: white; font-size: 0.9em; }
+        .message-text { margin-top: 4px; font-size: 0.95em; line-height: 1.3; }
+
+        .input-area { padding: 0 20px 24px 20px; }
+        #message-input { width: 100%; padding: 12px; border-radius: 8px; border: none; background-color: #383a40; color: var(--text); outline: none; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2 id="auth-title">Boas-vindas de volta!</h2>
+            <input type="email" id="email" placeholder="E-mail">
+            <input type="password" id="password" placeholder="Senha">
+            <button class="auth-btn" id="btn-auth">Entrar</button>
+            <a class="toggle-auth" id="toggle-mode">Não tem uma conta? Registre-se</a>
+        </div>
+    </div>
+
+    <div class="app-container" id="app">
+        <nav class="sidebar-servers">
+            <div class="server-icon">DC</div>
+        </nav>
+
+        <aside class="sidebar-channels">
+            <div class="channel-header">
+                Dev Cord 
+                <span class="logout-btn" id="btn-logout">Sair</span>
+            </div>
+            <div style="padding: 10px; color: #949ba4;"># geral</div>
+        </aside>
+
+        <main class="chat-area">
+            <header class="chat-header"># geral</header>
+            <div id="message-container"></div>
+            <div class="input-area">
+                <input type="text" id="message-input" placeholder="Conversar em #geral">
+            </div>
+        </main>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD6mo_rK6_4-RtaR8Wzg9UxWy7HaqnKNE8",
+        authDomain: "devcord-4dcf6.firebaseapp.com",
+        projectId: "devcord-4dcf6",
+        storageBucket: "devcord-4dcf6.firebasestorage.app",
+        messagingSenderId: "168388878048",
+        appId: "1:168388878048:web:c4b9628253e4b46c077a85"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const colRef = collection(db, "mensagens");
+
+    let isLoginMode = true;
+    let currentUser = null;
+
+    // --- LÓGICA DE INTERFACE ---
+    const authOverlay = document.getElementById('auth-overlay');
+    const appContainer = document.getElementById('app');
+    const btnAuth = document.getElementById('btn-auth');
+    const toggleMode = document.getElementById('toggle-mode');
+    const messageInput = document.getElementById('message-input');
+    const messageContainer = document.getElementById('message-container');
+
+    // Alternar entre Login e Registro
+    toggleMode.onclick = () => {
+        isLoginMode = !isLoginMode;
+        document.getElementById('auth-title').innerText = isLoginMode ? "Boas-vindas de volta!" : "Criar uma conta";
+        btnAuth.innerText = isLoginMode ? "Entrar" : "Registrar";
+        toggleMode.innerText = isLoginMode ? "Não tem uma conta? Registre-se" : "Já tem conta? Faça login";
+    };
+
+    // Fazer Login ou Registro
+    btnAuth.onclick = async () => {
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('password').value;
+        try {
+            if (isLoginMode) {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } else {
+                await createUserWithEmailAndPassword(auth, email, pass);
+            }
+        } catch (e) { alert(e.message); }
+    };
+
+    // Sair
+    document.getElementById('btn-logout').onclick = () => signOut(auth);
+
+    // --- MONITOR DE AUTENTICAÇÃO ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            authOverlay.style.display = 'none';
+            appContainer.style.visibility = 'visible';
+            carregarMensagens();
+        } else {
+            authOverlay.style.display = 'flex';
+            appContainer.style.visibility = 'hidden';
+        }
+    });
+
+    // --- CHAT EM TEMPO REAL ---
+    function carregarMensagens() {
+        const q = query(colRef, orderBy("createdAt", "asc"));
+        onSnapshot(q, (snapshot) => {
+            messageContainer.innerHTML = '';
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                renderMessage(data.user, data.text);
+            });
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        });
+    }
+
+    messageInput.onkeypress = async (e) => {
+        if (e.key === 'Enter' && messageInput.value.trim() !== "") {
+            const txt = messageInput.value;
+            messageInput.value = "";
+            await addDoc(colRef, {
+                text: txt,
+                user: currentUser.email.split('@')[0], // Nome baseado no email
+                createdAt: serverTimestamp()
+            });
+        }
+    };
+
+    function renderMessage(nome, texto) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message';
+        msgDiv.innerHTML = `
+            <div class="user-avatar" style="background-color: ${stringToColor(nome)}">${nome[0].toUpperCase()}</div>
+            <div class="message-content">
+                <b>${nome}</b>
+                <div class="message-text">${texto}</div>
+            </div>
+        `;
+        messageContainer.appendChild(msgDiv);
+    }
+
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        return `hsl(${Math.abs(hash) % 360}, 60%, 50%)`;
+    }
+</script>
+</body>
+</html>
