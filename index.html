@@ -27,65 +27,75 @@
         .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.05); color: white; }
 
         /* CHAT AREA */
-        .chat-area { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
         #msg-container { flex-grow: 1; overflow-y: auto; padding: 20px 0; }
         .message-wrapper { position: relative; padding: 4px 16px; display: flex; gap: 16px; transition: background 0.1s; }
         .message-wrapper:hover { background: rgba(0,0,0,0.05); }
         .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); background-size: cover; flex-shrink: 0; }
         .chat-img { max-width: 400px; border-radius: 8px; margin-top: 8px; display: block; cursor: pointer; }
 
-        /* INPUT */
-        .input-section { padding: 0 16px 24px; }
-        .upload-preview { background: #2b2d31; padding: 10px; border-radius: 8px 8px 0 0; display: none; width: fit-content; position: relative; border: 1px solid var(--bg-input); border-bottom: none; }
-        .preview-img { height: 80px; border-radius: 4px; }
-        .remove-preview { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 20px; height: 20px; text-align: center; cursor: pointer; font-size: 12px; line-height: 20px; }
+        /* INPUT SECTIONS */
+        .input-section { padding: 0 16px 24px; position: relative; }
         .input-wrapper { background: var(--bg-input); border-radius: 8px; display: flex; align-items: center; padding: 0 12px; gap: 12px; }
         #message-input { flex-grow: 1; padding: 12px; background: transparent; border: none; color: white; outline: none; }
 
-        /* MENU MENSAGENS */
-        .msg-actions { position: absolute; top: 5px; right: 20px; background: var(--bg-chat); border: 1px solid #232428; border-radius: 4px; display: none; z-index: 10; }
-        .message-wrapper:hover .msg-actions { display: flex; }
-        .action-btn { padding: 4px 8px; cursor: pointer; color: var(--text-muted); }
-        .dropdown-menu { position: absolute; right: 20px; top: 30px; background: #111214; border-radius: 4px; padding: 6px; width: 150px; display: none; z-index: 100; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
-        .menu-item { padding: 8px; border-radius: 2px; font-size: 13px; cursor: pointer; }
-        .menu-item:hover { background: var(--accent); color: white; }
+        /* EMOJI PICKER */
+        #emoji-picker { position: absolute; bottom: 80px; right: 20px; width: 300px; height: 350px; background: #111214; border: 1px solid #232428; border-radius: 8px; display: none; flex-direction: column; z-index: 2000; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
+        .emoji-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding: 10px; overflow-y: auto; font-size: 22px; }
+        .emoji-item { cursor: pointer; text-align: center; transition: 0.1s; }
+        .emoji-item:hover { transform: scale(1.2); }
 
         /* MODAIS */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 5000; }
-        .modal-content { background: var(--bg-chat); padding: 24px; border-radius: 8px; width: 400px; color: white; }
-        input[type="text"], textarea { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: none; background: #1e1f22; color: white; box-sizing: border-box; }
-        #explore-screen { position: fixed; inset: 0; background: var(--bg-chat); z-index: 4000; display: none; flex-direction: column; align-items: center; padding: 40px; overflow-y: auto; }
-
+        .modal-content { background: var(--bg-chat); padding: 24px; border-radius: 8px; width: 400px; color: white; position: relative; }
+        input[type="text"], textarea { width: 100%; padding: 10px; margin: 8px 0; border-radius: 4px; border: none; background: #1e1f22; color: white; box-sizing: border-box; }
+        
+        /* BANNER */
+        .profile-banner { height: 100px; background-size: cover; background-position: center; background-color: var(--accent); width: 100%; }
         .recording { color: var(--danger); animation: pulse 1s infinite; }
         @keyframes pulse { 0% {opacity:1} 50% {opacity:0.4} 100% {opacity:1} }
-        audio { height: 35px; filter: invert(0.8); margin-top: 5px; display: block; }
+        audio { height: 35px; filter: invert(0.8); margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div id="explore-screen">
-        <button onclick="closeExplore()" style="position:fixed; right:40px; top:40px; background:none; border:none; color:white; cursor:pointer; font-size:24px">✕</button>
-        <h1>Descobrir Comunidades</h1>
-        <input type="text" id="search-input" placeholder="Pesquisar servidores..." oninput="searchServers()" style="max-width:600px">
-        <div id="search-results" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:20px; width:100%; max-width:1000px; margin-top:20px"></div>
+    <div id="modal-create-srv" class="modal">
+        <div class="modal-content">
+            <h2 style="margin:0 0 15px">Criar seu servidor</h2>
+            <label style="font-size:12px; color:var(--text-muted)">NOME DO SERVIDOR</label>
+            <input type="text" id="new-srv-name" placeholder="Servidor do Dev">
+            <label style="font-size:12px; color:var(--text-muted)">URL DO ÍCONE</label>
+            <input type="text" id="new-srv-icon" placeholder="https://...">
+            <label style="font-size:12px; color:var(--text-muted)">URL DO BANNER DE FUNDO</label>
+            <input type="text" id="new-srv-banner" placeholder="https://...">
+            <div style="margin-top:20px; display:flex; gap:10px">
+                <button onclick="confirmCreateSrv()" style="flex:1; padding:10px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer">Criar</button>
+                <button onclick="closeModal('modal-create-srv')" style="flex:1; background:none; color:white; border:none; cursor:pointer">Cancelar</button>
+            </div>
+        </div>
     </div>
 
     <div id="modal-profile" class="modal">
-        <div class="modal-content" style="width:340px; padding:0; overflow:hidden">
-            <div id="p-banner" style="height:60px; background:var(--accent)"></div>
+        <div class="modal-content" style="padding:0; overflow:hidden; width:350px">
+            <div id="p-banner" class="profile-banner"></div>
             <div style="padding:15px; position:relative">
-                <div id="p-avatar" style="width:80px; height:80px; border-radius:50%; border:6px solid var(--bg-chat); position:absolute; top:-40px; background-size:cover; background-color:var(--accent)"></div>
-                <div style="margin-top:45px">
+                <div id="p-avatar" style="width:80px; height:80px; border-radius:50%; border:6px solid var(--bg-chat); position:absolute; top:-45px; background-size:cover; background-color:var(--accent)"></div>
+                <div style="margin-top:40px">
                     <h3 id="display-nick" style="margin:0">Nick</h3>
-                    <p id="display-bio" style="font-size:13px; color:var(--text-muted)"></p>
                     <input type="text" id="edit-nick" placeholder="Novo Nick">
-                    <input type="text" id="edit-avatar" placeholder="URL da Foto">
+                    <input type="text" id="edit-avatar" placeholder="URL da Foto de Perfil">
+                    <input type="text" id="edit-banner" placeholder="URL do Banner de Fundo">
                     <textarea id="edit-bio" placeholder="Sobre mim..."></textarea>
                     <button onclick="saveProfile()" style="width:100%; padding:10px; background:var(--success); border:none; color:white; border-radius:4px; cursor:pointer">Salvar</button>
-                    <button onclick="document.getElementById('modal-profile').style.display='none'" style="width:100%; margin-top:5px; background:transparent; border:none; color:white; cursor:pointer">Cancelar</button>
+                    <button onclick="closeModal('modal-profile')" style="width:100%; margin-top:5px; background:none; color:white; border:none; cursor:pointer">Sair</button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="emoji-picker">
+        <div style="padding:10px; font-weight:bold; font-size:12px; border-bottom:1px solid #232428">EMOJIS</div>
+        <div class="emoji-grid" id="emoji-list"></div>
     </div>
 
     <div id="app">
@@ -93,8 +103,7 @@
             <div class="server-icon active" onclick="switchMode('DM')" id="home-btn">DM</div>
             <div style="width:32px; height:2px; background: #35363c"></div>
             <div id="srv-list"></div>
-            <div class="server-icon" style="color:var(--success)" onclick="createServerPrompt()">+</div>
-            <div class="server-icon" style="color:var(--success)" onclick="openExplore()">🔍</div>
+            <div class="server-icon" style="color:var(--success)" onclick="openModal('modal-create-srv')">+</div>
         </nav>
 
         <aside class="sidebar-channels">
@@ -111,15 +120,12 @@
             <div id="msg-container"></div>
             
             <div class="input-section">
-                <div id="upload-preview" class="upload-preview">
-                    <span class="remove-preview" onclick="clearPreview()">✕</span>
-                    <img id="img-render" class="preview-img" src="">
-                </div>
                 <div class="input-wrapper">
-                    <label for="file-up" style="cursor:pointer; font-size: 20px;">+</label>
+                    <label for="file-up" style="cursor:pointer; font-size:20px">+</label>
                     <input type="file" id="file-up" hidden accept="image/*" onchange="previewFile(this)">
                     <input type="text" id="message-input" placeholder="Conversar...">
-                    <span id="mic-btn" onclick="handleVoice()" style="cursor:pointer; font-size: 20px;">🎤</span>
+                    <span onclick="toggleEmojis()" style="cursor:pointer; font-size:20px">😊</span>
+                    <span id="mic-btn" onclick="handleVoice()" style="cursor:pointer; font-size:20px">🎤</span>
                 </div>
             </div>
         </main>
@@ -139,13 +145,32 @@
         appId: "1:168388878048:web:c4b9628253e4b46c077a85"
     };
 
-    const firebaseApp = initializeApp(firebaseConfig);
-    const db = getFirestore(firebaseApp);
-    const auth = getAuth(firebaseApp);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
     let currentMode = "DM", currentSrvId = null, currentChanId = "geral", activeChatId = null;
     let unsubMsgs = null, pendingImage = null, mediaRecorder, audioChunks = [];
 
+    // --- EMOJIS ---
+    const emojiStr = "😀😃😄😁😆😅😂🤣😊😇🙂🙃😉😌😍🥰😘😗😙😚😋😛😜🤪😝🤑🤗🤭🤫🤔😐😑😶😏😒🙄😬🤥😌😔😪🤤😴😷🤒🤕🤢🤮🤧😵🤯🤠🥳😎🤓🧐😕😟🙁☹️😮😯😲😳🥺😦😧😨😰😥😢😭😤😠😡🤬😈👿💀☠️👻👽🤖🎃👋🤚✋🖐️✌️🤞🤟🤘🤙👌🤌🤏✊👊🤛🤜👍👎✍️🙌👏🫶🙏💪🦾🦿❤️🧡💛💚💙💜🖤🤍🤎💔❣️💕💞💓💗💖💘💯✔️❌❗❓❕❔⚠️🚫⛔🔞⭐🌟✨💥🔥🎉🎊🐶🐱🐭🐹🐰🦊🐻🐼🐨🐯🦁🐮🐷🐸🐵🐔🐧🐦🐤🦆🦅🐍🐢🐊🦖🦕🐟🐠🐳🐬🦈🍎🍊🍌🍉🍇🍓🫐🍔🍟🍕🌭🥪🌮🌯🍝🍜🍣🍤🍗🍖🍰🧁🍩🍪🍫🍿☕🍺🍻🥤🧃🎮🕹️👾🎲♟️💻🖥️⌨️🖱️📱📡🌐⚙️🔧🔨💾📂📁🧠🤖🚀✈️🚗🏍️🚲🏠🏢🏙️📦📌📎🔑🔒🔓🔊🔇🔔🧨💣";
+    
+    function initEmojiPicker() {
+        const list = document.getElementById('emoji-list');
+        Array.from(emojiStr).forEach(emoji => {
+            const el = document.createElement('div');
+            el.className = 'emoji-item';
+            el.innerText = emoji;
+            el.onclick = () => { document.getElementById('message-input').value += emoji; };
+            list.appendChild(el);
+        });
+    }
+    window.toggleEmojis = () => {
+        const p = document.getElementById('emoji-picker');
+        p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+    };
+
+    // --- AUTH & USER ---
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             document.getElementById('app').style.visibility = 'visible';
@@ -153,16 +178,13 @@
             updateUserUI();
             listenServers();
             switchMode('DM');
-        } else {
-            // Se não houver usuário, você pode redirecionar para login aqui
-            console.log("Aguardando login...");
+            initEmojiPicker();
         }
     });
 
     async function checkUser(u) {
         const ref = doc(db, "usuarios", u.uid);
-        const snap = await getDoc(ref);
-        if(!snap.exists()) await setDoc(ref, { nick: u.email.split('@')[0], avatar: '', bio: '' });
+        if(!(await getDoc(ref)).exists()) await setDoc(ref, { nick: u.email.split('@')[0], avatar: '', bio: '', banner: '' });
     }
 
     async function updateUserUI() {
@@ -171,11 +193,24 @@
         document.getElementById('my-avatar-small').style.backgroundImage = `url(${d.avatar})`;
     }
 
+    // --- SERVIDORES & CANAIS ---
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+    window.confirmCreateSrv = async () => {
+        const nome = document.getElementById('new-srv-name').value;
+        const foto = document.getElementById('new-srv-icon').value;
+        const banner = document.getElementById('new-srv-banner').value;
+        if(!nome) return;
+        const r = await addDoc(collection(db, "todos_servidores"), { nome, foto, banner, dono: auth.currentUser.uid });
+        await setDoc(doc(db, "membros", `${auth.currentUser.uid}_${r.id}`), { uid: auth.currentUser.uid, srvId: r.id });
+        closeModal('modal-create-srv');
+    };
+
     window.switchMode = (mode, srvId = null) => {
-        currentMode = mode;
-        currentSrvId = srvId;
+        currentMode = mode; currentSrvId = srvId;
+        const items = document.getElementById('sidebar-items');
         document.getElementById('home-btn').classList.toggle('active', mode === 'DM');
-        
         if(mode === 'DM') {
             document.getElementById('side-title').innerText = "Mensagens Diretas";
             listenFriends();
@@ -184,6 +219,33 @@
             listenChannels(srvId);
         }
     };
+
+    function listenServers() {
+        onSnapshot(query(collection(db, "membros"), where("uid", "==", auth.currentUser.uid)), async snap => {
+            const list = document.getElementById('srv-list'); list.innerHTML = '';
+            for(const d of snap.docs) {
+                const s = (await getDoc(doc(db, "todos_servidores", d.data().srvId))).data();
+                const div = document.createElement('div'); div.className = 'server-icon';
+                if(s.foto) div.style.backgroundImage = `url(${s.foto})`; else div.innerText = s.nome[0];
+                div.onclick = () => switchMode('SERVER', d.data().srvId);
+                list.appendChild(div);
+            }
+        });
+    }
+
+    function listenChannels(srvId) {
+        const items = document.getElementById('sidebar-items');
+        onSnapshot(query(collection(db, `canais_${srvId}`), orderBy("createdAt", "asc")), snap => {
+            items.innerHTML = `<div class="nav-item active" onclick="selectChannel('geral', 'geral')"># geral</div>`;
+            snap.forEach(d => {
+                const div = document.createElement('div'); div.className = 'nav-item';
+                div.innerText = `# ${d.data().nome}`;
+                div.onclick = () => selectChannel(d.id, d.data().nome);
+                items.appendChild(div);
+            });
+            items.innerHTML += `<div class="nav-item" style="color:var(--success)" onclick="createChanPrompt()">+ Criar Canal</div>`;
+        });
+    }
 
     function listenFriends() {
         const items = document.getElementById('sidebar-items');
@@ -201,200 +263,78 @@
         });
     }
 
-    function listenChannels(srvId) {
-        const items = document.getElementById('sidebar-items');
-        onSnapshot(query(collection(db, `canais_${srvId}`), orderBy("createdAt", "asc")), snap => {
-            items.innerHTML = `<div class="nav-item active" onclick="selectChannel('geral', 'geral')"># geral</div>`;
-            snap.forEach(d => {
-                const div = document.createElement('div');
-                div.className = 'nav-item';
-                div.innerText = `# ${d.data().nome}`;
-                div.onclick = () => selectChannel(d.id, d.data().nome);
-                items.appendChild(div);
-            });
-            items.innerHTML += `<div class="nav-item" style="color:var(--success)" onclick="createChanPrompt()">+ Criar Canal</div>`;
-        });
-    }
-
-    window.openExplore = () => document.getElementById('explore-screen').style.display = 'flex';
-    window.closeExplore = () => document.getElementById('explore-screen').style.display = 'none';
-
-    window.searchServers = async () => {
-        const val = document.getElementById('search-input').value.toLowerCase();
-        const snap = await getDocs(collection(db, "todos_servidores"));
-        const res = document.getElementById('search-results');
-        res.innerHTML = '';
-        snap.forEach(d => {
-            if(d.data().nome.toLowerCase().includes(val)) {
-                res.innerHTML += `<div style="background:var(--bg-channels); padding:15px; border-radius:8px; text-align:center">
-                    <div style="width:50px; height:50px; background-size:cover; background-image:url(${d.data().foto}); margin:0 auto 10px; border-radius:15px"></div>
-                    <b>${d.data().nome}</b><br><button onclick="joinSrv('${d.id}')" style="margin-top:10px; background:var(--accent); border:none; color:white; padding:5px 10px; border-radius:4px; cursor:pointer">Entrar</button>
-                </div>`;
-            }
-        });
-    };
-
-    window.joinSrv = async id => { await setDoc(doc(db, "membros", `${auth.currentUser.uid}_${id}`), { uid: auth.currentUser.uid, srvId: id }); closeExplore(); };
-
-    function listenServers() {
-        onSnapshot(query(collection(db, "membros"), where("uid", "==", auth.currentUser.uid)), async snap => {
-            const list = document.getElementById('srv-list'); list.innerHTML = '';
-            for(const d of snap.docs) {
-                const sDoc = await getDoc(doc(db, "todos_servidores", d.data().srvId));
-                if(sDoc.exists()){
-                    const s = sDoc.data();
-                    const div = document.createElement('div'); div.className = 'server-icon';
-                    if(s.foto) div.style.backgroundImage = `url(${s.foto})`; else div.innerText = s.nome[0];
-                    div.onclick = () => switchMode('SERVER', d.data().srvId);
-                    list.appendChild(div);
-                }
-            }
-        });
-    }
-
-    // --- MENSAGENS, IMAGEM & ÁUDIO ---
-    window.previewFile = input => {
-        const file = input.files[0];
-        if(file) {
-            const reader = new FileReader();
-            reader.onload = e => { pendingImage = e.target.result; document.getElementById('img-render').src = pendingImage; document.getElementById('upload-preview').style.display = 'block'; };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    window.clearPreview = () => { pendingImage = null; document.getElementById('upload-preview').style.display = 'none'; };
-
+    // --- MENSAGENS & MÍDIA ---
     async function sendMsg() {
         const input = document.getElementById('message-input');
         if(!input.value.trim() && !pendingImage) return;
         const path = currentMode === "DM" ? `dms_${activeChatId}` : `msgs_${currentSrvId}_${currentChanId}`;
         const u = (await getDoc(doc(db, "usuarios", auth.currentUser.uid))).data();
-        await addDoc(collection(db, path), {
-            text: input.value, image: pendingImage, user: u.nick, avatar: u.avatar, uid: auth.currentUser.uid, createdAt: serverTimestamp()
-        });
-        input.value = ''; clearPreview();
+        await addDoc(collection(db, path), { text: input.value, image: pendingImage, user: u.nick, avatar: u.avatar, uid: auth.currentUser.uid, createdAt: serverTimestamp() });
+        input.value = ''; pendingImage = null;
     }
 
-    // --- ÁUDIO CORRIGIDO ---
     window.handleVoice = async () => {
         const btn = document.getElementById('mic-btn');
         if(!mediaRecorder || mediaRecorder.state === "inactive") {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream); audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    // Converter para Base64 para que o outro usuário possa baixar a string e ouvir
-                    const reader = new FileReader();
-                    reader.readAsDataURL(audioBlob);
-                    reader.onloadend = async () => {
-                        const base64Audio = reader.result;
-                        const path = currentMode === "DM" ? `dms_${activeChatId}` : `msgs_${currentSrvId}_${currentChanId}`;
-                        const u = (await getDoc(doc(db, "usuarios", auth.currentUser.uid))).data();
-                        await addDoc(collection(db, path), { 
-                            audio: base64Audio, 
-                            user: u.nick, 
-                            avatar: u.avatar, 
-                            uid: auth.currentUser.uid, 
-                            createdAt: serverTimestamp() 
-                        });
-                    }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream); audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader(); reader.readAsDataURL(blob);
+                reader.onloadend = async () => {
+                    const path = currentMode === "DM" ? `dms_${activeChatId}` : `msgs_${currentSrvId}_${currentChanId}`;
+                    const u = (await getDoc(doc(db, "usuarios", auth.currentUser.uid))).data();
+                    await addDoc(collection(db, path), { audio: reader.result, user: u.nick, avatar: u.avatar, uid: auth.currentUser.uid, createdAt: serverTimestamp() });
                 };
-                mediaRecorder.start(); 
-                btn.classList.add('recording');
-            } catch(err) { alert("Permissão de áudio negada."); }
-        } else { 
-            mediaRecorder.stop(); 
-            btn.classList.remove('recording'); 
-        }
+            };
+            mediaRecorder.start(); btn.classList.add('recording');
+        } else { mediaRecorder.stop(); btn.classList.remove('recording'); }
     };
 
     function loadChat(path) {
         if(unsubMsgs) unsubMsgs();
-        const cont = document.getElementById('msg-container');
         unsubMsgs = onSnapshot(query(collection(db, path), orderBy("createdAt", "asc")), snap => {
-            cont.innerHTML = '';
+            const cont = document.getElementById('msg-container'); cont.innerHTML = '';
             snap.forEach(d => {
                 const m = d.data();
-                const div = document.createElement('div');
-                div.className = 'message-wrapper';
-                div.innerHTML = `
-                    <div class="avatar" style="background-image:url(${m.avatar || ''})"></div>
-                    <div class="msg-content">
+                cont.innerHTML += `<div class="message-wrapper">
+                    <div class="avatar" style="background-image:url(${m.avatar})"></div>
+                    <div>
                         <b style="font-size:14px">${m.user}</b>
-                        ${m.text ? `<div style="font-size:15px">${m.text}</div>` : ''}
-                        ${m.image ? `<img src="${m.image}" class="chat-img" onclick="window.open(this.src)">` : ''}
+                        ${m.text ? `<div>${m.text}</div>` : ''}
+                        ${m.image ? `<img src="${m.image}" class="chat-img">` : ''}
                         ${m.audio ? `<audio controls src="${m.audio}"></audio>` : ''}
                     </div>
-                    <div class="msg-actions">
-                        <span class="action-btn" onclick="toggleMenu('${d.id}')">...</span>
-                    </div>
-                    <div class="dropdown-menu" id="menu-${d.id}">
-                        <div class="menu-item" onclick="navigator.clipboard.writeText('${m.text || ''}')">Copiar Texto</div>
-                        ${m.uid === auth.currentUser.uid ? `<div class="menu-item" style="color:red" onclick="deleteMessage('${path}', '${d.id}')">Excluir</div>` : ''}
-                    </div>`;
-                cont.appendChild(div);
+                </div>`;
             });
             cont.scrollTop = cont.scrollHeight;
         });
     }
 
-    window.deleteMessage = async (path, id) => {
-        if(confirm("Excluir mensagem?")) await deleteDoc(doc(db, path, id));
-    };
-
-    window.toggleMenu = id => { 
-        const m = document.getElementById(`menu-${id}`); 
-        const isVisible = m.style.display === 'block';
-        document.querySelectorAll('.dropdown-menu').forEach(el => el.style.display = 'none');
-        m.style.display = isVisible ? 'none' : 'block'; 
-    };
-
-    window.selectChannel = (id, nome) => { currentChanId = id; document.getElementById('chat-title').innerText = nome; loadChat(`msgs_${currentSrvId}_${id}`); };
-    
+    // --- PERFIL ---
     window.openProfile = async () => {
         const d = (await getDoc(doc(db, "usuarios", auth.currentUser.uid))).data();
         document.getElementById('edit-nick').value = d.nick;
-        document.getElementById('edit-avatar').value = d.avatar;
-        document.getElementById('edit-bio').value = d.bio;
-        document.getElementById('display-nick').innerText = d.nick;
-        document.getElementById('display-bio').innerText = d.bio;
+        document.getElementById('edit-avatar').value = d.avatar || '';
+        document.getElementById('edit-banner').value = d.banner || '';
+        document.getElementById('edit-bio').value = d.bio || '';
+        document.getElementById('p-banner').style.backgroundImage = `url(${d.banner})`;
         document.getElementById('p-avatar').style.backgroundImage = `url(${d.avatar})`;
-        document.getElementById('modal-profile').style.display = 'flex';
+        openModal('modal-profile');
     };
 
     window.saveProfile = async () => {
-        const nick = document.getElementById('edit-nick').value;
-        const avat = document.getElementById('edit-avatar').value;
-        const bio = document.getElementById('edit-bio').value;
-        await setDoc(doc(db, "usuarios", auth.currentUser.uid), { nick, avatar: avat, bio }, {merge:true});
-        document.getElementById('modal-profile').style.display = 'none';
-        updateUserUI();
+        await setDoc(doc(db, "usuarios", auth.currentUser.uid), {
+            nick: document.getElementById('edit-nick').value,
+            avatar: document.getElementById('edit-avatar').value,
+            banner: document.getElementById('edit-banner').value,
+            bio: document.getElementById('edit-bio').value
+        }, {merge:true});
+        location.reload();
     };
 
-    window.addFriendPrompt = async () => {
-        const nick = prompt("Nick exato do amigo:"); if(!nick) return;
-        const q = await getDocs(query(collection(db, "usuarios"), where("nick", "==", nick)));
-        if(!q.empty) {
-            const friendId = q.docs[0].id;
-            if(friendId === auth.currentUser.uid) return alert("Você não pode se adicionar.");
-            await setDoc(doc(db, "amigos", `${auth.currentUser.uid}_${friendId}`), { uids: [auth.currentUser.uid, friendId] });
-        } else { alert("Usuário não encontrado."); }
-    };
-
-    window.createServerPrompt = async () => {
-        const n = prompt("Nome do Servidor:"); if(!n) return;
-        const f = prompt("URL da Foto do Servidor:");
-        const r = await addDoc(collection(db, "todos_servidores"), { nome: n, foto: f, dono: auth.currentUser.uid });
-        await joinSrv(r.id);
-    };
-
-    window.createChanPrompt = async () => {
-        const n = prompt("Nome do Canal:"); if(n) await addDoc(collection(db, `canais_${currentSrvId}`), { nome: n, createdAt: serverTimestamp() });
-    };
-
+    window.selectChannel = (id, nome) => { currentChanId = id; document.getElementById('chat-title').innerText = nome; loadChat(`msgs_${currentSrvId}_${id}`); };
     document.getElementById('message-input').onkeypress = e => { if(e.key === 'Enter') sendMsg(); };
 </script>
 </body>
