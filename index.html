@@ -1,352 +1,878 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevCord | Ultimate Edition</title>
+    <title>DevCord | Discord Clone</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
-            --bg-servers: #1e1f22; --bg-channels: #2b2d31; --bg-chat: #313338;
-            --bg-input: #383a40; --accent: #5865f2; --success: #23a559;
-            --danger: #f23f42; --text-main: #dbdee1; --text-muted: #949ba4;
+            --bg-tertiary: #202225;
+            --bg-secondary: #2f3136;
+            --bg-primary: #36393f;
+            --bg-message-hover: #32353b;
+            --channel-hover: #34373c;
+            --text-normal: #dcddde;
+            --text-muted: #72767d;
+            --header-primary: #ffffff;
+            --interactive-normal: #b9bbbe;
+            --interactive-hover: #dcddde;
+            --interactive-active: #ffffff;
+            --brand-experiment: #5865f2;
         }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'gg sans', sans-serif; background: var(--bg-chat); color: var(--text-main); overflow: hidden; }
-        #app { display: flex; height: 100vh; visibility: hidden; }
+        
+        body {
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-tertiary);
+            color: var(--text-normal);
+            overflow: hidden;
+        }
 
-        /* SIDEBAR SERVIDORES */
-        .sidebar-servers { width: 72px; background: var(--bg-servers); display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 8px; flex-shrink: 0; overflow-y: auto; }
-        .server-icon { width: 48px; height: 48px; background: var(--bg-chat); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; background-size: cover; background-position: center; color: white; position: relative; }
-        .server-icon:hover, .server-icon.active { border-radius: 30%; background-color: var(--accent); }
-        .server-icon.active::before { content: ""; position: absolute; left: -12px; width: 4px; height: 35px; background: white; border-radius: 0 4px 4px 0; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+            background-color: #2e3338;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #202225;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background-color: #2e3338;
+        }
 
-        /* SIDEBAR CANAIS / DM */
-        .sidebar-channels { width: 240px; background: var(--bg-channels); display: flex; flex-direction: column; flex-shrink: 0; }
-        .header-box { height: 48px; display: flex; align-items: center; padding: 0 16px; font-weight: bold; border-bottom: 1px solid rgba(0,0,0,0.2); justify-content: space-between; }
-        .item-list { flex-grow: 1; overflow-y: auto; padding: 8px 0; }
-        .nav-item { padding: 6px 8px; margin: 2px 8px; cursor: pointer; border-radius: 4px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; font-size: 14px; }
-        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.05); color: white; }
+        .server-icon {
+            transition: border-radius 0.2s ease-out, background-color 0.2s ease-out;
+        }
+        .server-item:hover .server-icon {
+            border-radius: 16px;
+            background-color: var(--brand-experiment);
+        }
+        .server-item.active .server-icon {
+            border-radius: 16px;
+            background-color: var(--brand-experiment);
+        }
+        
+        .server-pill {
+            height: 8px;
+            width: 4px;
+            border-radius: 0 4px 4px 0;
+            position: absolute;
+            left: 0;
+            background-color: white;
+            display: none;
+            transition: height 0.2s;
+        }
+        .server-item:hover .server-pill {
+            display: block;
+            height: 20px;
+        }
+        .server-item.active .server-pill {
+            display: block;
+            height: 40px;
+        }
 
-        /* CHAT AREA */
-        .chat-area { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
-        #msg-container { flex-grow: 1; overflow-y: auto; padding: 20px 0; }
-        .message-wrapper { position: relative; padding: 4px 16px; display: flex; gap: 16px; transition: background 0.1s; }
-        .message-wrapper:hover { background: rgba(0,0,0,0.05); }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); background-size: cover; flex-shrink: 0; }
-        .chat-img { max-width: 400px; border-radius: 8px; margin-top: 8px; display: block; cursor: pointer; }
+        .channel-item:hover {
+            background-color: var(--channel-hover);
+            color: var(--interactive-hover);
+        }
+        .channel-item.active {
+            background-color: rgba(79, 84, 92, 0.48); /* Selected channel color */
+            color: white;
+        }
 
-        /* INPUT & PREVIEW */
-        .input-section { padding: 0 16px 24px; }
-        .upload-preview { background: #2b2d31; padding: 10px; border-radius: 8px 8px 0 0; display: none; width: fit-content; position: relative; border: 1px solid var(--bg-input); border-bottom: none; }
-        .preview-img { height: 80px; border-radius: 4px; }
-        .remove-preview { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 20px; height: 20px; text-align: center; cursor: pointer; font-size: 12px; line-height: 20px; }
-        .input-wrapper { background: var(--bg-input); border-radius: 8px; display: flex; align-items: center; padding: 0 12px; gap: 12px; }
-        #message-input { flex-grow: 1; padding: 12px; background: transparent; border: none; color: white; outline: none; }
+        .message-group:hover {
+            background-color: var(--bg-message-hover);
+        }
+        
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
 
-        /* MENU 3 PONTINHOS */
-        .msg-actions { position: absolute; top: -15px; right: 20px; background: var(--bg-chat); border: 1px solid #232428; border-radius: 4px; display: none; z-index: 10; }
-        .message-wrapper:hover .msg-actions { display: flex; }
-        .action-btn { padding: 4px 8px; cursor: pointer; color: var(--text-muted); }
-        .action-btn:hover { color: white; }
-        .dropdown-menu { position: absolute; right: 20px; top: 15px; background: #111214; border-radius: 4px; padding: 6px; width: 150px; display: none; z-index: 100; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
-        .menu-item { padding: 8px; border-radius: 2px; font-size: 13px; cursor: pointer; }
-        .menu-item:hover { background: var(--accent); color: white; }
-
-        /* MODAIS & EXPLORAR */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 5000; }
-        .modal-content { background: var(--bg-chat); padding: 24px; border-radius: 8px; width: 400px; color: white; }
-        input[type="text"], textarea { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: none; background: #1e1f22; color: white; box-sizing: border-box; }
-        #explore-screen { position: fixed; inset: 0; background: var(--bg-chat); z-index: 4000; display: none; flex-direction: column; align-items: center; padding: 40px; overflow-y: auto; }
-
-        .recording { color: var(--danger); animation: pulse 1s infinite; }
-        @keyframes pulse { 0% {opacity:1} 50% {opacity:0.4} 100% {opacity:1} }
-        audio { height: 35px; filter: invert(1); margin-top: 5px; }
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #5865f2;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
-<body>
+<body class="flex h-screen w-screen overflow-hidden text-sm">
 
-    <div id="explore-screen">
-        <button onclick="closeExplore()" style="position:fixed; right:40px; top:40px; background:none; border:none; color:white; cursor:pointer; font-size:24px">✕</button>
-        <h1>Descobrir Comunidades</h1>
-        <input type="text" id="search-input" placeholder="Pesquisar servidores..." oninput="searchServers()" style="max-width:600px">
-        <div id="search-results" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:20px; width:100%; max-width:1000px; margin-top:20px"></div>
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay">
+        <div class="bg-[#36393f] p-8 rounded-md shadow-2xl w-full max-w-md text-center">
+            <h2 class="text-2xl font-bold text-white mb-2" id="auth-title">Bem-vindo de volta!</h2>
+            <p class="text-[#b9bbbe] mb-6" id="auth-subtitle">Estamos muito animados em te ver novamente!</p>
+            
+            <div id="register-fields" class="hidden text-left mb-4">
+                <label class="uppercase text-xs font-bold text-[#b9bbbe] mb-2 block">Nome de Usuário</label>
+                <input type="text" id="username-input" class="w-full bg-[#202225] border border-[#202225] p-2.5 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]" placeholder="Seu nome">
+            </div>
+
+            <div class="text-left mb-4">
+                <label class="uppercase text-xs font-bold text-[#b9bbbe] mb-2 block">E-mail <span class="text-red-500">*</span></label>
+                <input type="email" id="email-input" class="w-full bg-[#202225] border border-[#202225] p-2.5 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]" placeholder="seu@email.com">
+            </div>
+
+            <div class="text-left mb-6">
+                <label class="uppercase text-xs font-bold text-[#b9bbbe] mb-2 block">Senha <span class="text-red-500">*</span></label>
+                <input type="password" id="password-input" class="w-full bg-[#202225] border border-[#202225] p-2.5 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]" placeholder="********">
+            </div>
+
+            <button id="auth-btn" class="w-full bg-[#5865f2] hover:bg-[#4752c4] text-white font-medium py-2.5 rounded transition duration-200 mb-2">
+                Entrar
+            </button>
+            
+            <div class="text-left text-xs mt-2">
+                <span class="text-[#72767d]" id="toggle-text">Precisa de uma conta?</span>
+                <span id="toggle-auth-mode" class="text-[#00aff4] hover:underline cursor-pointer ml-1">Registre-se</span>
+            </div>
+
+            <p id="auth-error" class="text-red-500 text-xs mt-2 hidden text-left"></p>
+        </div>
     </div>
 
-    <div id="modal-profile" class="modal">
-        <div class="modal-content" style="width:340px; padding:0; overflow:hidden">
-            <div id="p-banner" style="height:60px; background:var(--accent)"></div>
-            <div style="padding:15px; position:relative">
-                <div id="p-avatar" style="width:80px; height:80px; border-radius:50%; border:6px solid var(--bg-chat); position:absolute; top:-40px; background-size:cover; background-color:var(--accent)"></div>
-                <div style="margin-top:45px">
-                    <h3 id="display-nick" style="margin:0">Nick</h3>
-                    <p id="display-bio" style="font-size:13px; color:var(--text-muted)"></p>
-                    <input type="text" id="edit-nick" placeholder="Novo Nick">
-                    <input type="text" id="edit-avatar" placeholder="URL da Foto">
-                    <textarea id="edit-bio" placeholder="Sobre mim..."></textarea>
-                    <button onclick="saveProfile()" style="width:100%; padding:10px; background:var(--success); border:none; color:white; border-radius:4px; cursor:pointer">Salvar</button>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 z-40 flex items-center justify-center bg-[#2f3136] hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div id="app" class="flex w-full h-full opacity-0 transition-opacity duration-500">
+        
+        <!-- Server List (Left Sidebar) -->
+        <div class="w-[72px] bg-[#202225] flex flex-col items-center py-3 space-y-2 overflow-y-auto no-scrollbar shrink-0">
+            <!-- Home Button -->
+            <div class="server-item relative group w-full flex justify-center cursor-pointer" onclick="appState.selectServer('home')">
+                <div class="server-pill top-3"></div>
+                <div class="server-icon w-12 h-12 bg-[#36393f] text-white rounded-[24px] flex items-center justify-center transition-all group-hover:bg-[#5865f2] group-hover:text-white">
+                    <i class="fa-brands fa-discord text-xl"></i>
                 </div>
+            </div>
+
+            <div class="w-8 h-[2px] bg-[#36393f] rounded-lg mx-auto"></div>
+
+            <!-- Server List Container -->
+            <div id="server-list" class="flex flex-col items-center space-y-2 w-full">
+                <!-- Servers will be injected here -->
+            </div>
+
+            <!-- Add Server Button -->
+            <div class="server-item relative group w-full flex justify-center cursor-pointer mt-2" onclick="showCreateServerModal()">
+                <div class="server-icon w-12 h-12 bg-[#36393f] text-[#3ba55c] hover:text-white hover:bg-[#3ba55c] rounded-[24px] flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-plus text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar (Channels) -->
+        <div class="w-60 bg-[#2f3136] flex flex-col shrink-0">
+            <!-- Server Header -->
+            <div class="h-12 px-4 flex items-center justify-between shadow-sm cursor-pointer hover:bg-[#34373c] transition">
+                <h1 id="server-name" class="font-bold text-white truncate">DevCord Home</h1>
+                <i class="fa-solid fa-chevron-down text-xs"></i>
+            </div>
+
+            <!-- Channels List -->
+            <div class="flex-1 overflow-y-auto p-2 space-y-4" id="channel-list-container">
+                <!-- Channels injected here -->
+            </div>
+
+            <!-- User Area (Bottom) -->
+            <div class="bg-[#292b2f] h-[52px] flex items-center px-2 shrink-0">
+                <div class="w-8 h-8 rounded-full bg-gray-500 relative mr-2 cursor-pointer hover:opacity-80 group">
+                    <img id="current-user-avatar" src="https://ui-avatars.com/api/?name=User&background=random" class="w-full h-full rounded-full">
+                    <div id="current-user-status-indicator" class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#292b2f]"></div>
+                </div>
+                <div class="flex-1 overflow-hidden">
+                    <div id="current-user-name" class="text-white text-xs font-bold truncate">...</div>
+                    <div id="current-user-discriminator" class="text-[#b9bbbe] text-[10px]">#0000</div>
+                </div>
+                <div class="flex space-x-1">
+                    <button id="logout-btn" class="w-8 h-8 flex items-center justify-center rounded hover:bg-[#3f4147] text-[#b9bbbe]" title="Sair">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                    </button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded hover:bg-[#3f4147] text-[#b9bbbe]">
+                        <i class="fa-solid fa-gear text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="flex-1 bg-[#36393f] flex flex-col min-w-0">
+            <!-- Top Bar -->
+            <div class="h-12 px-4 flex items-center shadow-sm shrink-0 border-b border-[#26272d]">
+                <div class="text-[#72767d] mr-2 text-xl">
+                    <i class="fa-solid fa-hashtag"></i>
+                </div>
+                <h3 id="channel-header-name" class="font-bold text-white mr-4">geral</h3>
+                <div class="text-[#b9bbbe] text-xs truncate" id="channel-topic">Tópico do canal aqui</div>
+                
+                <div class="ml-auto flex items-center space-x-4 text-[#b9bbbe]">
+                    <i class="fa-solid fa-bell cursor-pointer hover:text-[#dcddde]"></i>
+                    <i class="fa-solid fa-thumbtack cursor-pointer hover:text-[#dcddde]"></i>
+                    <i class="fa-solid fa-user-group cursor-pointer hover:text-[#dcddde] hidden md:block" onclick="toggleMembers()"></i>
+                    <div class="relative">
+                        <input type="text" placeholder="Buscar" class="bg-[#202225] text-xs px-2 py-1 rounded w-36 transition-all focus:w-60 text-white placeholder-[#72767d]">
+                        <i class="fa-solid fa-magnifying-glass absolute right-2 top-1.5 text-xs text-[#72767d]"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="messages-scroller" class="flex-1 overflow-y-auto p-4 space-y-1 flex flex-col">
+                <!-- Welcome Message -->
+                <div class="mt-auto mb-4">
+                    <div class="w-16 h-16 bg-[#4f545c] rounded-full flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-hashtag text-4xl text-white"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-white mb-2">Bem-vindo a #<span id="welcome-channel-name">geral</span>!</h1>
+                    <p class="text-[#b9bbbe]">Este é o começo do canal #<span id="welcome-channel-name-2">geral</span>.</p>
+                </div>
+                
+                <div id="messages-container" class="flex flex-col space-y-4">
+                    <!-- Messages Injected Here -->
+                </div>
+                <div id="scroll-anchor"></div>
+            </div>
+
+            <!-- Message Input -->
+            <div class="px-4 pb-6 pt-2 shrink-0">
+                <div id="paste-indicator" class="hidden bg-[#2f3136] text-xs text-[#b9bbbe] px-3 py-1 rounded-t-lg w-fit ml-2 flex items-center">
+                    <i class="fa-solid fa-image mr-2"></i> Imagem pronta para envio (Enter para enviar)
+                    <i class="fa-solid fa-xmark ml-2 cursor-pointer hover:text-white" onclick="clearPastedImage()"></i>
+                </div>
+                <div class="bg-[#40444b] rounded-lg p-3 flex items-center relative">
+                    <!-- Upload icon removed visually as requested, functionally we support paste/url -->
+                    <div class="text-[#b9bbbe] mr-4 w-6 flex justify-center cursor-default" title="Cole uma imagem (Ctrl+V) ou URL">
+                        <i class="fa-solid fa-circle-plus text-xl"></i>
+                    </div>
+                    
+                    <input id="message-input" type="text" class="bg-transparent flex-1 text-white placeholder-[#72767d] focus:outline-none" placeholder="Conversar em #geral (Cole imagem ou URL)">
+                    
+                    <div class="flex items-center space-x-3 ml-2 text-[#b9bbbe]">
+                        <i class="fa-solid fa-gift cursor-pointer hover:text-[#dcddde]"></i>
+                        <i class="fa-solid fa-note-sticky cursor-pointer hover:text-[#dcddde]"></i>
+                        <i class="fa-solid fa-face-smile cursor-pointer hover:text-[#dcddde]"></i>
+                    </div>
+                </div>
+                <p class="text-[10px] text-[#72767d] mt-1 ml-1">Dica: Cole uma imagem com <strong>Ctrl + V</strong> ou digite uma URL de imagem.</p>
+            </div>
+        </div>
+
+        <!-- Member List (Right Sidebar) -->
+        <div id="member-list" class="w-60 bg-[#2f3136] shrink-0 hidden md:flex flex-col overflow-y-auto p-4">
+            <h2 class="text-[#8e9297] text-xs font-bold uppercase mb-4 hover:text-[#dcddde]">Online — <span id="online-count">0</span></h2>
+            <div id="members-online-container" class="space-y-1">
+                <!-- Members injected here -->
             </div>
         </div>
     </div>
 
-    <div id="app">
-        <nav class="sidebar-servers">
-            <div class="server-icon active" onclick="switchMode('DM')" id="home-btn">DM</div>
-            <div style="width:32px; height:2px; background: #35363c"></div>
-            <div id="srv-list"></div>
-            <div class="server-icon" style="color:var(--success)" onclick="createServerPrompt()">+</div>
-            <div class="server-icon" style="color:var(--success)" onclick="openExplore()">🔍</div>
-        </nav>
-
-        <aside class="sidebar-channels">
-            <div class="header-box" id="side-title">Mensagens Diretas</div>
-            <div class="item-list" id="sidebar-items"></div>
-            <div style="margin-top:auto; padding:10px; background:#232428; display:flex; align-items:center; gap:10px; cursor:pointer" onclick="openProfile()">
-                <div id="my-avatar-small" style="width:32px; height:32px; border-radius:50%; background-size:cover; background-color:var(--accent)"></div>
-                <div id="my-nick-small" style="font-size:13px; font-weight:bold">Usuário</div>
-            </div>
-        </aside>
-
-        <main class="chat-area">
-            <div class="header-box"># <span id="chat-title">Início</span></div>
-            <div id="msg-container"></div>
-            
-            <div class="input-section">
-                <div id="upload-preview" class="upload-preview">
-                    <span class="remove-preview" onclick="clearPreview()">✕</span>
-                    <img id="img-render" class="preview-img" src="">
+    <!-- Modals -->
+    <!-- Create Server Modal -->
+    <div id="create-server-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay hidden">
+        <div class="bg-white p-0 rounded-md shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="p-6 text-center">
+                <h2 class="text-2xl font-bold text-[#060607] mb-2">Personalize seu servidor</h2>
+                <p class="text-[#4f5660] text-sm mb-6">Dê um nome e um ícone ao seu novo servidor. Você pode mudar isso depois.</p>
+                
+                <div class="flex justify-center mb-6">
+                    <div class="w-24 h-24 border-2 border-dashed border-[#b9bbbe] rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-100">
+                        <div class="text-center">
+                            <i class="fa-solid fa-camera text-[#4f5660] mb-1"></i>
+                            <div class="text-xs font-bold text-[#4f5660] uppercase">Icon</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="input-wrapper">
-                    <label for="file-up" class="icon-btn" style="cursor:pointer">➕</label>
-                    <input type="file" id="file-up" hidden accept="image/*" onchange="previewFile(this)">
-                    <input type="text" id="message-input" placeholder="Conversar...">
-                    <span id="mic-btn" class="icon-btn" onclick="handleVoice()" style="cursor:pointer">🎤</span>
+
+                <div class="text-left mb-2">
+                    <label class="uppercase text-xs font-bold text-[#4f5660] mb-2 block">Nome do Servidor</label>
+                    <input type="text" id="new-server-name" class="w-full bg-[#e3e5e8] border-none p-2.5 rounded text-black focus:outline-none" value="Servidor de Dev">
                 </div>
             </div>
-        </main>
+            <div class="bg-[#f2f3f5] p-4 flex justify-between items-center">
+                <button onclick="closeModal('create-server-modal')" class="text-[#4f5660] text-sm hover:underline font-medium">Voltar</button>
+                <button onclick="createServer()" class="bg-[#5865f2] hover:bg-[#4752c4] text-white font-medium py-2.5 px-6 rounded transition duration-200">Criar</button>
+            </div>
+        </div>
     </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, setDoc, doc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyD6mo_rK6_4-RtaR8Wzg9UxWy7HaqnKNE8",
-        authDomain: "devcord-4dcf6.firebaseapp.com",
-        projectId: "devcord-4dcf6",
-        storageBucket: "devcord-4dcf6.firebasestorage.app",
-        messagingSenderId: "168388878048",
-        appId: "1:168388878048:web:c4b9628253e4b46c077a85"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-
-    let currentMode = "DM", currentSrvId = null, currentChanId = "geral", activeChatId = null;
-    let unsubMsgs = null, pendingImage = null, mediaRecorder, audioChunks = [];
-
-    // --- AUTH ---
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            document.getElementById('app').style.visibility = 'visible';
-            await checkUser(user);
-            updateUserUI();
-            listenServers();
-            switchMode('DM');
-        }
-    });
-
-    async function checkUser(u) {
-        const ref = doc(db, "usuarios", u.uid);
-        if(!(await getDoc(ref)).exists()) await setDoc(ref, { nick: u.email.split('@')[0], avatar: '', bio: '' });
-    }
-
-    async function updateUserUI() {
-        const d = (await getDoc(doc(db, "usuarios", auth.currentUser.uid))).data();
-        document.getElementById('my-nick-small').innerText = d.nick;
-        document.getElementById('my-avatar-small').style.backgroundImage = `url(${d.avatar})`;
-    }
-
-    // --- MODES & SIDEBAR ---
-    window.switchMode = (mode, srvId = null) => {
-        currentMode = mode;
-        currentSrvId = srvId;
-        const items = document.getElementById('sidebar-items');
-        document.getElementById('home-btn').classList.toggle('active', mode === 'DM');
-        
-        if(mode === 'DM') {
-            document.getElementById('side-title').innerText = "Mensagens Diretas";
-            listenFriends();
-        } else {
-            document.getElementById('side-title').innerText = "Canais";
-            listenChannels(srvId);
-        }
-    };
-
-    function listenFriends() {
-        const items = document.getElementById('sidebar-items');
-        items.innerHTML = `<div class="nav-item" style="color:var(--success)" onclick="addFriendPrompt()">+ Adicionar Amigo</div>`;
-        onSnapshot(query(collection(db, "amigos"), where("uids", "array-contains", auth.currentUser.uid)), async snap => {
-            for(const d of snap.docs) {
-                const fId = d.data().uids.find(id => id !== auth.currentUser.uid);
-                const u = (await getDoc(doc(db, "usuarios", fId))).data();
-                const div = document.createElement('div');
-                div.className = 'nav-item';
-                div.innerHTML = `<div style="width:24px; height:24px; border-radius:50%; background-size:cover; background-image:url(${u.avatar})"></div> ${u.nick}`;
-                div.onclick = () => { activeChatId = d.id; document.getElementById('chat-title').innerText = u.nick; loadChat(`dms_${d.id}`); };
-                items.appendChild(div);
-            }
-        });
-    }
-
-    function listenChannels(srvId) {
-        const items = document.getElementById('sidebar-items');
-        onSnapshot(query(collection(db, `canais_${srvId}`), orderBy("createdAt", "asc")), snap => {
-            items.innerHTML = `<div class="nav-item active" onclick="selectChannel('geral', 'geral')"># geral</div>`;
-            snap.forEach(d => {
-                const div = document.createElement('div');
-                div.className = 'nav-item';
-                div.innerText = `# ${d.data().nome}`;
-                div.onclick = () => selectChannel(d.id, d.data().nome);
-                items.appendChild(div);
-            });
-            items.innerHTML += `<div class="nav-item" style="color:var(--success)" onclick="createChanPrompt()">+ Criar Canal</div>`;
-        });
-    }
-
-    // --- EXPLORAR & SERVIDORES ---
-    window.openExplore = () => document.getElementById('explore-screen').style.display = 'flex';
-    window.closeExplore = () => document.getElementById('explore-screen').style.display = 'none';
-
-    window.searchServers = async () => {
-        const val = document.getElementById('search-input').value.toLowerCase();
-        const snap = await getDocs(collection(db, "todos_servidores"));
-        const res = document.getElementById('search-results');
-        res.innerHTML = '';
-        snap.forEach(d => {
-            if(d.data().nome.toLowerCase().includes(val)) {
-                res.innerHTML += `<div style="background:var(--bg-channels); padding:15px; border-radius:8px; text-align:center">
-                    <div style="width:50px; height:50px; background-size:cover; background-image:url(${d.data().foto}); margin:0 auto 10px; border-radius:15px"></div>
-                    <b>${d.data().nome}</b><br><button onclick="joinSrv('${d.id}')" style="margin-top:10px; background:var(--accent); border:none; color:white; padding:5px 10px; border-radius:4px; cursor:pointer">Entrar</button>
-                </div>`;
-            }
-        });
-    };
-
-    window.joinSrv = async id => { await setDoc(doc(db, "membros", `${auth.currentUser.uid}_${id}`), { uid: auth.currentUser.uid, srvId: id }); closeExplore(); };
-
-    function listenServers() {
-        onSnapshot(query(collection(db, "membros"), where("uid", "==", auth.currentUser.uid)), async snap => {
-            const list = document.getElementById('srv-list'); list.innerHTML = '';
-            for(const d of snap.docs) {
-                const s = (await getDoc(doc(db, "todos_servidores", d.data().srvId))).data();
-                const div = document.createElement('div'); div.className = 'server-icon';
-                if(s.foto) div.style.backgroundImage = `url(${s.foto})`; else div.innerText = s.nome[0];
-                div.onclick = () => switchMode('SERVER', d.data().srvId);
-                list.appendChild(div);
-            }
-        });
-    }
-
-    // --- MENSAGENS, IMAGEM & ÁUDIO ---
-    window.previewFile = input => {
-        const file = input.files[0];
-        if(file) {
-            const reader = new FileReader();
-            reader.onload = e => { pendingImage = e.target.result; document.getElementById('img-render').src = pendingImage; document.getElementById('upload-preview').style.display = 'block'; };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    window.clearPreview = () => { pendingImage = null; document.getElementById('upload-preview').style.display = 'none'; };
-
-    async function sendMsg() {
-        const input = document.getElementById('message-input');
-        if(!input.value.trim() && !pendingImage) return;
-        const path = currentMode === "DM" ? `dms_${activeChatId}` : `msgs_${currentSrvId}_${currentChanId}`;
-        const u = (await getDoc(doc(db, "usuarios", auth.currentUser.uid))).data();
-        await addDoc(collection(db, path), {
-            text: input.value, image: pendingImage, user: u.nick, avatar: u.avatar, uid: auth.currentUser.uid, createdAt: serverTimestamp()
-        });
-        input.value = ''; clearPreview();
-    }
-
-    window.handleVoice = async () => {
-        const btn = document.getElementById('mic-btn');
-        if(!mediaRecorder || mediaRecorder.state === "inactive") {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream); audioChunks = [];
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            mediaRecorder.onstop = async () => {
-                const url = URL.createObjectURL(new Blob(audioChunks, { type: 'audio/webm' }));
-                const path = currentMode === "DM" ? `dms_${activeChatId}` : `msgs_${currentSrvId}_${currentChanId}`;
-                const u = (await getDoc(doc(db, "usuarios", auth.currentUser.uid))).data();
-                await addDoc(collection(db, path), { audio: url, user: u.nick, avatar: u.avatar, uid: auth.currentUser.uid, createdAt: serverTimestamp() });
-            };
-            mediaRecorder.start(); btn.classList.add('recording');
-        } else { mediaRecorder.stop(); btn.classList.remove('recording'); }
-    };
-
-    function loadChat(path) {
-        if(unsubMsgs) unsubMsgs();
-        unsubMsgs = onSnapshot(query(collection(db, path), orderBy("createdAt", "asc")), snap => {
-            const cont = document.getElementById('msg-container'); cont.innerHTML = '';
-            snap.forEach(d => {
-                const m = d.data();
-                cont.innerHTML += `<div class="message-wrapper">
-                    <div class="avatar" style="background-image:url(${m.avatar})"></div>
-                    <div class="msg-content">
-                        <b style="font-size:14px">${m.user}</b>
-                        ${m.text ? `<div style="font-size:15px">${m.text}</div>` : ''}
-                        ${m.image ? `<img src="${m.image}" class="chat-img" onclick="window.open(this.src)">` : ''}
-                        ${m.audio ? `<audio controls src="${m.audio}"></audio>` : ''}
+    <!-- Create Channel Modal -->
+    <div id="create-channel-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay hidden">
+        <div class="bg-[#36393f] p-6 rounded-md shadow-2xl w-full max-w-md text-white">
+            <h2 class="text-xl font-bold mb-4">Criar Canal</h2>
+            
+            <div class="mb-4">
+                <label class="uppercase text-xs font-bold text-[#b9bbbe] mb-2 block">Tipo de Canal</label>
+                <div class="bg-[#2f3136] p-3 rounded flex items-center justify-between cursor-pointer hover:bg-[#34373c]">
+                    <div class="flex items-center">
+                        <i class="fa-solid fa-hashtag text-2xl text-[#b9bbbe] mr-3"></i>
+                        <div>
+                            <div class="font-medium">Texto</div>
+                            <div class="text-xs text-[#b9bbbe]">Envie mensagens, imagens, GIFs, opiniões e piadas.</div>
+                        </div>
                     </div>
-                    <div class="msg-actions"><span class="action-btn" onclick="toggleMenu('${d.id}')">...</span></div>
-                    <div class="dropdown-menu" id="menu-${d.id}">
-                        <div class="menu-item" onclick="navigator.clipboard.writeText('${m.text || ''}')">Copiar Texto</div>
-                        ${m.uid === auth.currentUser.uid ? `<div class="menu-item" style="color:red" onclick="deleteDoc(doc(db, '${path}', '${d.id}'))">Excluir</div>` : ''}
-                    </div>
-                </div>`;
-            });
-            cont.scrollTop = cont.scrollHeight;
+                    <input type="radio" checked name="channel-type" class="accent-[#5865f2] h-5 w-5">
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="uppercase text-xs font-bold text-[#b9bbbe] mb-2 block">Nome do Canal</label>
+                <div class="relative">
+                    <i class="fa-solid fa-hashtag absolute left-2.5 top-3 text-[#b9bbbe]"></i>
+                    <input type="text" id="new-channel-name" class="w-full bg-[#202225] border-none py-2.5 pl-8 pr-2 rounded text-white focus:outline-none" placeholder="novo-canal">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeModal('create-channel-modal')" class="text-white text-sm hover:underline font-medium px-4">Cancelar</button>
+                <button onclick="createChannel()" class="bg-[#5865f2] hover:bg-[#4752c4] text-white font-medium py-2 px-6 rounded transition duration-200">Criar Canal</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, push, onValue, update, serverTimestamp, get, child, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6mo_rK6_4-RtaR8Wzg9UxWy7HaqnKNE8",
+            authDomain: "devcord-4dcf6.firebaseapp.com",
+            databaseURL: "https://devcord-4dcf6-default-rtdb.firebaseio.com",
+            projectId: "devcord-4dcf6",
+            storageBucket: "devcord-4dcf6.firebasestorage.app",
+            messagingSenderId: "168388878048",
+            appId: "1:168388878048:web:c4b9628253e4b46c077a85"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        // State
+        window.appState = {
+            user: null,
+            currentServerId: null,
+            currentChannelId: null,
+            servers: {},
+            channels: {},
+            pastedImageBlob: null
+        };
+
+        // DOM Elements
+        const authModal = document.getElementById('auth-modal');
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const emailInput = document.getElementById('email-input');
+        const passwordInput = document.getElementById('password-input');
+        const usernameInput = document.getElementById('username-input');
+        const registerFields = document.getElementById('register-fields');
+        const authBtn = document.getElementById('auth-btn');
+        const toggleAuthMode = document.getElementById('toggle-auth-mode');
+        const toggleText = document.getElementById('toggle-text');
+        const authError = document.getElementById('auth-error');
+
+        const appDiv = document.getElementById('app');
+        const messageInput = document.getElementById('message-input');
+        const messagesContainer = document.getElementById('messages-container');
+        const pasteIndicator = document.getElementById('paste-indicator');
+
+        // Auth Mode Toggle
+        let isRegisterMode = false;
+
+        toggleAuthMode.addEventListener('click', () => {
+            isRegisterMode = !isRegisterMode;
+            authError.classList.add('hidden');
+            
+            if (isRegisterMode) {
+                authTitle.innerText = "Criar uma conta";
+                authSubtitle.innerText = "Estamos felizes em ter você conosco!";
+                registerFields.classList.remove('hidden');
+                authBtn.innerText = "Registrar";
+                toggleText.innerText = "Já tem uma conta?";
+                toggleAuthMode.innerText = "Entrar";
+            } else {
+                authTitle.innerText = "Bem-vindo de volta!";
+                authSubtitle.innerText = "Estamos muito animados em te ver novamente!";
+                registerFields.classList.add('hidden');
+                authBtn.innerText = "Entrar";
+                toggleText.innerText = "Precisa de uma conta?";
+                toggleAuthMode.innerText = "Registre-se";
+            }
         });
-    }
 
-    // --- UTILS ---
-    window.toggleMenu = id => { const m = document.getElementById(`menu-${id}`); m.style.display = m.style.display === 'block' ? 'none' : 'block'; };
-    window.selectChannel = (id, nome) => { currentChanId = id; document.getElementById('chat-title').innerText = nome; loadChat(`msgs_${currentSrvId}_${id}`); };
-    window.openProfile = async () => {
-        const d = (await getDoc(doc(db, "usuarios", auth.currentUser.uid))).data();
-        document.getElementById('display-nick').innerText = d.nick;
-        document.getElementById('display-bio').innerText = d.bio;
-        document.getElementById('p-avatar').style.backgroundImage = `url(${d.avatar})`;
-        document.getElementById('modal-profile').style.display = 'flex';
-    };
-    window.saveProfile = async () => {
-        await setDoc(doc(db, "usuarios", auth.currentUser.uid), {
-            nick: document.getElementById('edit-nick').value || document.getElementById('display-nick').innerText,
-            avatar: document.getElementById('edit-avatar').value,
-            bio: document.getElementById('edit-bio').value
-        }, {merge:true});
-        location.reload();
-    };
-    window.addFriendPrompt = async () => {
-        const nick = prompt("Nick do amigo:"); if(!nick) return;
-        const q = await getDocs(query(collection(db, "usuarios"), where("nick", "==", nick)));
-        if(!q.empty) await setDoc(doc(db, "amigos", `${auth.currentUser.uid}_${q.docs[0].id}`), { uids: [auth.currentUser.uid, q.docs[0].id] });
-    };
-    window.createServerPrompt = async () => {
-        const n = prompt("Nome:"); if(!n) return;
-        const f = prompt("URL Foto:");
-        const r = await addDoc(collection(db, "todos_servidores"), { nome: n, foto: f, dono: auth.currentUser.uid });
-        await joinSrv(r.id);
-    };
-    window.createChanPrompt = async () => {
-        const n = prompt("Canal:"); if(n) await addDoc(collection(db, `canais_${currentSrvId}`), { nome: n, createdAt: serverTimestamp() });
-    };
+        // Auth Action
+        authBtn.addEventListener('click', async () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            const username = usernameInput.value.trim();
 
-    document.getElementById('message-input').onkeypress = e => { if(e.key === 'Enter') sendMsg(); };
-</script>
+            if (!email || !password) {
+                showError("Email e senha são obrigatórios.");
+                return;
+            }
+
+            if (isRegisterMode && !username) {
+                showError("Nome de usuário é obrigatório.");
+                return;
+            }
+
+            authBtn.innerText = isRegisterMode ? 'Registrando...' : 'Entrando...';
+            authBtn.disabled = true;
+
+            try {
+                let userCredential;
+                if (isRegisterMode) {
+                    userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    
+                    // Update Auth Profile
+                    await updateProfile(userCredential.user, {
+                        displayName: username,
+                        photoURL: `https://ui-avatars.com/api/?name=${username}&background=random`
+                    });
+
+                    // Create DB User Entry
+                    await set(ref(db, 'users/' + userCredential.user.uid), {
+                        username: username,
+                        email: email,
+                        avatar: userCredential.user.photoURL,
+                        status: 'online',
+                        lastSeen: serverTimestamp()
+                    });
+                } else {
+                    userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    // Update status to online
+                    await update(ref(db, 'users/' + userCredential.user.uid), {
+                        status: 'online'
+                    });
+                }
+                
+                // Success handled by onAuthStateChanged
+            } catch (error) {
+                console.error("Auth failed:", error);
+                let msg = "Erro na autenticação.";
+                if (error.code === 'auth/email-already-in-use') msg = "Email já está em uso.";
+                if (error.code === 'auth/wrong-password') msg = "Senha incorreta.";
+                if (error.code === 'auth/user-not-found') msg = "Usuário não encontrado.";
+                if (error.code === 'auth/weak-password') msg = "A senha deve ter pelo menos 6 caracteres.";
+                
+                showError(msg);
+                authBtn.innerText = isRegisterMode ? 'Registrar' : 'Entrar';
+                authBtn.disabled = false;
+            }
+        });
+
+        function showError(msg) {
+            authError.innerText = msg;
+            authError.classList.remove('hidden');
+        }
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            if (auth.currentUser) {
+                 const userRef = ref(db, 'users/' + auth.currentUser.uid);
+                 await update(userRef, { status: 'offline' });
+                 await signOut(auth);
+                 window.location.reload();
+            }
+        });
+
+        // Auth Listener
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                appState.user = user;
+                authModal.classList.add('hidden');
+                document.getElementById('loading-screen').classList.remove('hidden');
+                
+                // Setup disconnect handler
+                const userStatusRef = ref(db, 'users/' + user.uid + '/status');
+                onDisconnect(userStatusRef).set('offline');
+
+                // Update UI with user info
+                const userRef = ref(db, 'users/' + user.uid);
+                get(userRef).then((snapshot) => {
+                    const data = snapshot.val();
+                    const name = data ? data.username : (user.displayName || "User");
+                    const avatar = data ? data.avatar : (user.photoURL || `https://ui-avatars.com/api/?name=${name}&background=random`);
+                    
+                    document.getElementById('current-user-name').innerText = name;
+                    document.getElementById('current-user-discriminator').innerText = '#' + user.uid.substring(0, 4);
+                    document.getElementById('current-user-avatar').src = avatar;
+                    
+                    initializeAppLogic();
+                });
+            } else {
+                authModal.classList.remove('hidden');
+                appDiv.style.opacity = '0';
+            }
+        });
+
+        function initializeAppLogic() {
+            // Listen to Servers
+            const serversRef = ref(db, 'servers');
+            onValue(serversRef, (snapshot) => {
+                const data = snapshot.val();
+                appState.servers = data || {};
+                renderServerList();
+                
+                // Select first server if not set
+                if (!appState.currentServerId && data && Object.keys(data).length > 0) {
+                    selectServer(Object.keys(data)[0]);
+                } else if (!data) {
+                    // No servers exist, maybe show empty state or prompt
+                }
+            });
+
+            // Show App
+            document.getElementById('loading-screen').classList.add('hidden');
+            appDiv.style.opacity = '1';
+        }
+
+        // --- Server Management ---
+        window.renderServerList = function() {
+            const container = document.getElementById('server-list');
+            container.innerHTML = '';
+
+            Object.entries(appState.servers).forEach(([id, server]) => {
+                const isActive = id === appState.currentServerId;
+                const initials = server.name.substring(0, 2).toUpperCase();
+                
+                const div = document.createElement('div');
+                div.className = `server-item relative group w-full flex justify-center cursor-pointer ${isActive ? 'active' : ''}`;
+                div.onclick = () => selectServer(id);
+                div.innerHTML = `
+                    <div class="server-pill top-3"></div>
+                    <div class="server-icon w-12 h-12 bg-[#36393f] text-white rounded-[24px] flex items-center justify-center transition-all overflow-hidden text-xs font-bold">
+                        ${server.icon ? `<img src="${server.icon}" class="w-full h-full object-cover">` : initials}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.selectServer = async function(serverId) {
+            appState.currentServerId = serverId;
+            renderServerList();
+
+            if (serverId === 'home') return;
+
+            const server = appState.servers[serverId];
+            if (!server) return;
+
+            document.getElementById('server-name').innerText = server.name;
+
+            // Implicit Join
+            if (auth.currentUser) {
+                const userSnapshot = await get(ref(db, `users/${auth.currentUser.uid}`));
+                if (userSnapshot.exists()) {
+                    const userData = userSnapshot.val();
+                    await update(ref(db, `servers/${serverId}/members/${auth.currentUser.uid}`), {
+                        username: userData.username,
+                        avatar: userData.avatar,
+                        status: 'online' // Force online update on join
+                    });
+                }
+            }
+
+            // Listen to Channels
+            const channelsRef = ref(db, `servers/${serverId}/channels`);
+            onValue(channelsRef, (snapshot) => {
+                const data = snapshot.val();
+                appState.channels = data || {};
+                renderChannelList();
+
+                const channelIds = data ? Object.keys(data) : [];
+                if (channelIds.length > 0) {
+                     if (!appState.currentChannelId || !data[appState.currentChannelId]) {
+                         selectChannel(channelIds[0]);
+                     }
+                }
+            });
+
+            // Listen to Members
+            const membersRef = ref(db, `servers/${serverId}/members`);
+            onValue(membersRef, (snapshot) => {
+                const members = snapshot.val() || {};
+                renderRealMemberList(members);
+            });
+        };
+
+        window.showCreateServerModal = function() {
+            document.getElementById('create-server-modal').classList.remove('hidden');
+        };
+
+        window.createServer = function() {
+            const name = document.getElementById('new-server-name').value;
+            if (!name) return;
+
+            const newServerRef = push(ref(db, 'servers'));
+            const serverId = newServerRef.key;
+            
+            set(newServerRef, {
+                name: name,
+                owner: appState.user.uid,
+                createdAt: serverTimestamp()
+            }).then(() => {
+                const newChannelRef = push(ref(db, `servers/${serverId}/channels`));
+                set(newChannelRef, { name: "geral", type: "text" });
+                closeModal('create-server-modal');
+                selectServer(serverId);
+            });
+        };
+
+        // --- Channel Management ---
+        window.renderChannelList = function() {
+            const container = document.getElementById('channel-list-container');
+            container.innerHTML = '';
+            
+            const textChannelsHeader = document.createElement('div');
+            textChannelsHeader.className = "flex items-center justify-between px-2 pt-4 pb-1 text-[#8e9297] hover:text-[#dcddde] uppercase text-xs font-bold cursor-pointer";
+            textChannelsHeader.innerHTML = `
+                <div class="flex items-center"><i class="fa-solid fa-chevron-down mr-1" style="font-size: 8px;"></i> Canais de Texto</div>
+                <i class="fa-solid fa-plus cursor-pointer" onclick="showCreateChannelModal(event)"></i>
+            `;
+            container.appendChild(textChannelsHeader);
+
+            Object.entries(appState.channels).forEach(([id, channel]) => {
+                const isActive = id === appState.currentChannelId;
+                const div = document.createElement('div');
+                div.className = `channel-item group flex items-center px-2 py-1 mx-2 rounded cursor-pointer mb-0.5 ${isActive ? 'active' : 'text-[#8e9297]'}`;
+                div.onclick = () => selectChannel(id);
+                div.innerHTML = `
+                    <i class="fa-solid fa-hashtag text-lg mr-1.5 text-[#72767d] group-hover:text-[#dcddde]"></i>
+                    <div class="font-medium truncate">${channel.name}</div>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.selectChannel = function(channelId) {
+            appState.currentChannelId = channelId;
+            renderChannelList();
+
+            const channel = appState.channels[channelId];
+            if(channel) {
+                document.getElementById('channel-header-name').innerText = channel.name;
+                document.getElementById('welcome-channel-name').innerText = channel.name;
+                document.getElementById('welcome-channel-name-2').innerText = channel.name;
+                document.getElementById('message-input').placeholder = `Conversar em #${channel.name} (Cole imagem ou URL)`;
+                
+                loadMessages(appState.currentServerId, channelId);
+            }
+        };
+
+        window.showCreateChannelModal = function(e) {
+            if(e) e.stopPropagation();
+            document.getElementById('create-channel-modal').classList.remove('hidden');
+        };
+
+        window.createChannel = function() {
+            const name = document.getElementById('new-channel-name').value.toLowerCase().replace(/\s+/g, '-');
+            if (!name) return;
+
+            if (appState.currentServerId) {
+                const newChannelRef = push(ref(db, `servers/${appState.currentServerId}/channels`));
+                set(newChannelRef, { name: name, type: "text" });
+                closeModal('create-channel-modal');
+            }
+        };
+
+        // --- Chat & Messages ---
+        let messageUnsubscribe = null;
+
+        function loadMessages(serverId, channelId) {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = ''; 
+            
+            if (messageUnsubscribe) messageUnsubscribe();
+
+            const messagesRef = ref(db, `messages/${serverId}/${channelId}`);
+            messageUnsubscribe = onValue(messagesRef, (snapshot) => {
+                container.innerHTML = '';
+                const data = snapshot.val();
+                if (data) {
+                    Object.values(data).forEach(msg => appendMessage(msg));
+                }
+                scrollToBottom();
+            });
+        }
+
+        function appendMessage(msg) {
+            const container = document.getElementById('messages-container');
+            const date = new Date(msg.timestamp);
+            const today = new Date();
+            const isToday = date.getDate() === today.getDate() && date.getMonth() === today.getMonth();
+            const timeStr = isToday 
+                ? `Hoje às ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}` 
+                : date.toLocaleDateString();
+
+            // Check if text is an image URL
+            let displayText = msg.text;
+            let displayImage = msg.imageUrl;
+
+            if (displayText && !displayImage && (displayText.match(/^https?:\/\/.*(jpeg|jpg|gif|png|webp)$/i) || displayText.includes("firebasestorage"))) {
+                displayImage = displayText;
+                displayText = ""; // Optionally hide the URL if we show the image
+            }
+
+            const div = document.createElement('div');
+            div.className = "message-group flex pl-4 pr-4 py-1 hover:bg-[#32353b] mt-2 group";
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-gray-500 mr-4 shrink-0 cursor-pointer overflow-hidden mt-1">
+                    <img src="${msg.userAvatar || 'https://ui-avatars.com/api/?name=User'}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center">
+                        <span class="font-medium text-white mr-2 hover:underline cursor-pointer">${msg.username}</span>
+                        <span class="text-[0.7rem] text-[#72767d]">${timeStr}</span>
+                    </div>
+                    <div class="text-[#dcddde] whitespace-pre-wrap break-words">
+                        ${displayText ? `<div>${displayText}</div>` : ''}
+                        ${displayImage ? `<div class="mt-2"><img src="${displayImage}" class="max-w-xs md:max-w-md rounded-md cursor-pointer hover:shadow-lg transition" onclick="window.open(this.src, '_blank')"></div>` : ''}
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function scrollToBottom() {
+            document.getElementById('scroll-anchor').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Paste Handler
+        document.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const blob = items[i].getAsFile();
+                    appState.pastedImageBlob = blob;
+                    
+                    pasteIndicator.classList.remove('hidden');
+                    messageInput.focus();
+                    return;
+                }
+            }
+        });
+
+        window.clearPastedImage = function() {
+            appState.pastedImageBlob = null;
+            pasteIndicator.classList.add('hidden');
+        };
+
+        // Send Message
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            const hasImage = appState.pastedImageBlob;
+
+            if ((!text && !hasImage) || !appState.currentServerId || !appState.currentChannelId) return;
+
+            let imageUrl = null;
+            
+            // Upload Image if exists
+            if (hasImage) {
+                try {
+                    const storageRef = sRef(storage, `uploads/${auth.currentUser.uid}/${Date.now()}.png`);
+                    const snapshot = await uploadBytes(storageRef, appState.pastedImageBlob);
+                    imageUrl = await getDownloadURL(snapshot.ref);
+                    clearPastedImage();
+                } catch (err) {
+                    console.error("Upload error", err);
+                    alert("Falha ao enviar imagem colada.");
+                    return;
+                }
+            }
+
+            const userSnapshot = await get(ref(db, `users/${auth.currentUser.uid}`));
+            const userData = userSnapshot.val() || { username: 'Anonymous', avatar: '' };
+
+            const messagesRef = ref(db, `messages/${appState.currentServerId}/${appState.currentChannelId}`);
+            push(messagesRef, {
+                text: text,
+                imageUrl: imageUrl,
+                uid: auth.currentUser.uid,
+                username: userData.username,
+                userAvatar: userData.avatar,
+                timestamp: serverTimestamp()
+            });
+
+            messageInput.value = '';
+            scrollToBottom();
+        }
+
+        // --- Members List ---
+        window.renderRealMemberList = function(membersData) {
+            const container = document.getElementById('members-online-container');
+            const countSpan = document.getElementById('online-count');
+            
+            container.innerHTML = '';
+            const members = Object.values(membersData);
+            countSpan.innerText = members.length;
+
+            members.forEach(m => {
+                const div = document.createElement('div');
+                div.className = "flex items-center px-2 py-2 hover:bg-[#34373c] rounded cursor-pointer opacity-90 hover:opacity-100";
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gray-600 mr-3 relative overflow-hidden">
+                        <img src="${m.avatar}" class="w-full h-full object-cover">
+                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#2f3136]"></div>
+                    </div>
+                    <div>
+                        <div class="font-medium text-white flex items-center">
+                            <span class="text-[#dcddde]">${m.username}</span>
+                        </div>
+                        <div class="text-xs text-[#b9bbbe]">${m.status || 'offline'}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        // --- Utility ---
+        window.closeModal = function(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        window.toggleMembers = function() {
+            const list = document.getElementById('member-list');
+            list.classList.toggle('hidden');
+            list.classList.toggle('flex');
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay && overlay.id !== 'auth-modal') {
+                    overlay.classList.add('hidden');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
