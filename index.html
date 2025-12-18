@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevCord | Ultimate</title>
+    <title>DevCord | Social</title>
     <style>
         :root {
             --bg-servers: #1e1f22;
@@ -11,240 +11,175 @@
             --bg-chat: #313338;
             --bg-input: #383a40;
             --accent: #5865f2;
-            --success: #23a559;
+            --danger: #f23f42;
             --text-main: #dbdee1;
             --text-muted: #949ba4;
         }
 
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'gg sans', 'Segoe UI', sans-serif; background: var(--bg-chat); color: var(--text-main); overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'gg sans', sans-serif; background: var(--bg-chat); color: var(--text-main); overflow: hidden; }
 
-        #app { display: flex; height: 100vh; visibility: hidden; }
+        #app { display: flex; height: 100vh; }
 
-        /* Sidebar Servidores */
-        .sidebar-servers { width: 72px; background: var(--bg-servers); display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 8px; flex-shrink: 0; overflow-y: auto; }
-        .server-icon { 
-            width: 48px; height: 48px; background: var(--bg-chat); border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; cursor: pointer; 
-            transition: 0.2s; font-weight: bold; position: relative;
-            background-size: cover; background-position: center; color: white;
+        /* Sidebar e Canais (Simplificado para o exemplo) */
+        .sidebar-servers { width: 72px; background: var(--bg-servers); display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 8px; }
+        .sidebar-channels { width: 240px; background: var(--bg-channels); }
+
+        /* Chat e Mensagens */
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        #msg-container { flex-grow: 1; overflow-y: auto; padding: 20px 0; }
+        
+        .message-wrapper { position: relative; padding: 2px 16px; display: flex; gap: 16px; transition: background 0.1s; margin-top: 8px; }
+        .message-wrapper:hover { background: rgba(0,0,0,0.05); }
+
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); background-size: cover; flex-shrink: 0; }
+        .msg-content { flex-grow: 1; }
+        .msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .msg-user { font-weight: bold; color: white; font-size: 14px; }
+        .msg-text { font-size: 14px; line-height: 1.3; }
+
+        /* Menu de 3 Pontinhos */
+        .msg-actions-trigger { 
+            position: absolute; top: -15px; right: 20px; 
+            background: var(--bg-chat); border: 1px solid #232428; 
+            border-radius: 4px; display: none; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 10;
         }
-        /* CORREÇÃO DO BUG: A imagem agora permanece no hover */
-        .server-icon:hover, .server-icon.active { border-radius: 30%; background-color: var(--accent); }
-        .server-icon.active::before { content: ""; position: absolute; left: -12px; width: 4px; height: 35px; background: white; border-radius: 0 4px 4px 0; }
+        .message-wrapper:hover .msg-actions-trigger { display: flex; }
+        .action-btn { padding: 4px 8px; cursor: pointer; color: var(--text-muted); font-size: 14px; }
+        .action-btn:hover { background: rgba(255,255,255,0.1); color: white; }
 
-        /* Sidebar Canais */
-        .sidebar-channels { width: 240px; background: var(--bg-channels); display: flex; flex-direction: column; }
-        .channel-item { padding: 6px 8px; margin: 2px 8px; cursor: pointer; border-radius: 4px; color: var(--text-muted); display: flex; align-items: center; }
-        .channel-item:hover, .channel-item.active { background: rgba(255,255,255,0.05); color: white; }
-        .channel-item.active { background: rgba(255,255,255,0.1); }
+        /* Menu Dropdown de Opções */
+        .options-menu {
+            position: absolute; right: 20px; top: 15px; background: #111214; 
+            border-radius: 4px; padding: 6px; width: 150px; display: none;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3); z-index: 100;
+        }
+        .menu-item { padding: 8px; border-radius: 2px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; }
+        .menu-item:hover { background: var(--accent); color: white; }
+        .menu-item.delete:hover { background: var(--danger); }
 
-        /* Modais */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 3000; }
-        .modal-content { background: #313338; padding: 20px; border-radius: 8px; width: 400px; }
-        .modal-content input, .modal-content textarea { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: none; background: #1e1f22; color: white; box-sizing: border-box; }
-
-        /* Perfil Estilo Discord */
-        .profile-card { background: #111214; border-radius: 8px; overflow: hidden; width: 340px; }
-        .profile-banner { height: 60px; background: var(--accent); position: relative; }
-        .profile-avatar-container { position: absolute; top: 20px; left: 16px; width: 80px; height: 80px; background: #111214; border-radius: 50%; padding: 6px; }
-        .profile-avatar { width: 100%; height: 100%; border-radius: 50%; background: var(--accent); background-size: cover; }
-        .profile-info { padding: 50px 16px 16px; }
-        .profile-bio { background: #1e1f22; padding: 10px; border-radius: 4px; font-size: 13px; margin-top: 10px; }
-
-        /* Chat */
-        .chat-area { flex-grow: 1; display: flex; flex-direction: column; }
-        #msg-container { flex-grow: 1; overflow-y: auto; padding: 20px; }
-        .input-area { padding: 16px; position: relative; }
-        .input-wrapper { background: var(--bg-input); border-radius: 8px; display: flex; align-items: center; padding: 0 12px; }
-        #message-input { flex-grow: 1; padding: 12px; background: transparent; border: none; color: white; outline: none; }
+        .input-area { padding: 0 16px 24px; }
+        .input-box { background: var(--bg-input); border-radius: 8px; padding: 10px 16px; border: none; color: white; width: 100%; box-sizing: border-box; outline: none; }
     </style>
 </head>
 <body>
 
-    <div id="modal-profile" class="modal">
-        <div class="profile-card">
-            <div id="p-banner-color" class="profile-banner">
-                <div class="profile-avatar-container"><div id="p-avatar-img" class="profile-avatar"></div></div>
-            </div>
-            <div class="profile-info">
-                <h3 id="p-nick" style="margin:0">Nickname</h3>
-                <div id="p-bio-text" class="profile-bio">Bio aqui...</div>
-                <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
-                <input type="text" id="edit-nick" placeholder="Novo Nickname">
-                <input type="text" id="edit-avatar" placeholder="URL Foto de Perfil">
-                <input type="color" id="edit-banner" style="height:40px">
-                <textarea id="edit-bio" placeholder="Sua bio..."></textarea>
-                <button onclick="saveProfile()" class="server-icon icon-green" style="width:100%; border-radius:4px; font-size:14px">Salvar Perfil</button>
-                <button onclick="document.getElementById('modal-profile').style.display='none'" style="width:100%; margin-top:5px; background:none; color:white; border:none; cursor:pointer">Fechar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-channel" class="modal">
-        <div class="modal-content">
-            <h3>Criar Canal de Texto</h3>
-            <input type="text" id="new-channel-name" placeholder="nome-do-canal">
-            <button onclick="confirmCreateChannel()" class="server-icon icon-green" style="width:100%; border-radius:4px;">Criar Canal</button>
-        </div>
-    </div>
-
     <div id="app">
-        <nav class="sidebar-servers">
-            <div id="my-servers"></div>
-            <div class="server-icon icon-green" onclick="document.getElementById('modal-create').style.display='flex'">+</div>
-        </nav>
-
-        <aside class="sidebar-channels">
-            <div class="header" id="srv-name">DevCord</div>
-            <div style="padding:15px 10px 5px; color:var(--text-muted); font-size:12px; display:flex; justify-content:space-between">
-                CANAIS DE TEXTO <span style="cursor:pointer" onclick="openChannelModal()">+</span>
-            </div>
-            <div id="channel-list"></div>
-            
-            <div style="margin-top:auto; padding:10px; background:#232428; display:flex; align-items:center; gap:8px; cursor:pointer" onclick="openProfile()">
-                <div id="user-avatar-small" style="width:32px; height:32px; border-radius:50%; background:var(--accent); background-size:cover"></div>
-                <div style="font-size:13px; font-weight:bold; overflow:hidden" id="user-tag">User</div>
-            </div>
-        </aside>
+        <nav class="sidebar-servers"><div id="my-servers"></div></nav>
+        <aside class="sidebar-channels"><div class="header" id="srv-name">Servidor</div></aside>
 
         <main class="chat-area">
-            <div class="header"># <span id="chan-name">geral</span></div>
             <div id="msg-container"></div>
             <div class="input-area">
-                <div class="input-wrapper">
-                    <input type="text" id="message-input" placeholder="Enviar mensagem...">
-                    <span style="cursor:pointer" onclick="toggleEmoji()">😀</span>
-                </div>
+                <input type="text" id="message-input" class="input-box" placeholder="Conversar...">
             </div>
         </main>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, setDoc, doc, query, orderBy, onSnapshot, serverTimestamp, getDocs, where, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    const firebaseConfig = { /* ... seu config ... */ };
+    // Configuração Firebase (mantenha a sua)
+    const firebaseConfig = { /* ... */ };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    let currentSrvId = null;
+    let currentSrvId = "dev_server_1"; // Exemplo
     let currentChanId = "geral";
-    let unsubMsgs = null;
 
-    // --- PERFIL ---
-    window.openProfile = async () => {
-        const userDoc = await getDoc(doc(db, "usuarios", auth.currentUser.uid));
-        if(userDoc.exists()){
-            const d = userDoc.data();
-            document.getElementById('p-nick').innerText = d.nick || auth.currentUser.email;
-            document.getElementById('p-bio-text').innerText = d.bio || "Sem bio";
-            document.getElementById('p-avatar-img').style.backgroundImage = `url(${d.avatar || ''})`;
-            document.getElementById('p-banner-color').style.backgroundColor = d.banner || '#5865f2';
-        }
-        document.getElementById('modal-profile').style.display = 'flex';
+    // --- FUNÇÕES DE MENSAGEM ---
+
+    window.toggleMenu = (id) => {
+        const menu = document.getElementById(`menu-${id}`);
+        const isVisible = menu.style.display === 'block';
+        document.querySelectorAll('.options-menu').forEach(m => m.style.display = 'none'); // Fecha outros
+        menu.style.display = isVisible ? 'none' : 'block';
     };
 
-    window.saveProfile = async () => {
-        const nick = document.getElementById('edit-nick').value;
-        const avatar = document.getElementById('edit-avatar').value;
-        const bio = document.getElementById('edit-bio').value;
-        const banner = document.getElementById('edit-banner').value;
-        
-        await setDoc(doc(db, "usuarios", auth.currentUser.uid), { nick, avatar, bio, banner }, {merge: true});
-        location.reload();
+    window.copyText = (text) => {
+        navigator.clipboard.writeText(text);
+        alert("Copiado!");
     };
 
-    // --- CANAIS ---
-    window.openChannelModal = () => document.getElementById('modal-channel').style.display = 'flex';
-    
-    window.confirmCreateChannel = async () => {
-        const nome = document.getElementById('new-channel-name').value;
-        if(nome && currentSrvId){
-            await addDoc(collection(db, `canais_${currentSrvId}`), { nome, createdAt: serverTimestamp() });
-            document.getElementById('modal-channel').style.display = 'none';
+    window.deleteMessage = async (msgId) => {
+        if(confirm("Deseja apagar esta mensagem?")) {
+            await deleteDoc(doc(db, `mensagens_${currentSrvId}_${currentChanId}`, msgId));
         }
     };
 
-    function listenChannels(srvId) {
-        onSnapshot(query(collection(db, `canais_${srvId}`), orderBy("createdAt", "asc")), (snap) => {
-            const list = document.getElementById('channel-list');
-            list.innerHTML = `<div class="channel-item ${currentChanId === 'geral' ? 'active' : ''}" onclick="selectChannel('geral', 'geral')"># geral</div>`;
-            snap.forEach(d => {
-                const chan = d.data();
-                const div = document.createElement('div');
-                div.className = `channel-item ${currentChanId === d.id ? 'active' : ''}`;
-                div.innerHTML = `# ${chan.nome}`;
-                div.onclick = () => selectChannel(d.id, chan.nome);
-                list.appendChild(div);
-            });
-        });
-    }
-
-    window.selectChannel = (id, nome) => {
-        currentChanId = id;
-        document.getElementById('chan-name').innerText = nome;
-        loadChat();
+    window.replyMsg = (user) => {
+        const input = document.getElementById('message-input');
+        input.value = `@${user} `;
+        input.focus();
     };
 
-    // --- SERVIDORES ---
-    function renderSrvIcon(srv) {
-        const list = document.getElementById('my-servers');
-        const div = document.createElement('div');
-        div.className = `server-icon ${currentSrvId === srv.id ? 'active' : ''}`;
-        if(srv.foto) div.style.backgroundImage = `url('${srv.foto}')`;
-        else div.innerText = srv.nome[0].toUpperCase();
-        
-        div.onclick = () => { 
-            currentSrvId = srv.id; 
-            currentChanId = "geral";
-            document.getElementById('srv-name').innerText = srv.nome;
-            listenChannels(srv.id);
-            loadChat();
-        };
-        list.appendChild(div);
-    }
+    // --- RENDERIZAÇÃO ---
 
-    // --- CHAT ---
     function loadChat() {
-        if (unsubMsgs) unsubMsgs();
-        const path = `mensagens_${currentSrvId}_${currentChanId}`;
-        const q = query(collection(db, path), orderBy("createdAt", "asc"));
-        unsubMsgs = onSnapshot(q, (snap) => {
+        const q = query(collection(db, `mensagens_${currentSrvId}_${currentChanId}`), orderBy("createdAt", "asc"));
+        onSnapshot(q, (snap) => {
             const cont = document.getElementById('msg-container');
             cont.innerHTML = '';
             snap.forEach(d => {
-                const data = d.data();
-                cont.innerHTML += `<div style="margin-bottom:10px"><b>${data.user}:</b> ${data.text}</div>`;
+                const msg = d.data();
+                const isOwner = auth.currentUser && auth.currentUser.uid === msg.uid;
+                
+                const div = document.createElement('div');
+                div.className = 'message-wrapper';
+                div.innerHTML = `
+                    <div class="avatar" style="background-image: url('${msg.avatar || ''}')"></div>
+                    <div class="msg-content">
+                        <div class="msg-header">
+                            <span class="msg-user">${msg.user}</span>
+                            <span style="font-size:10px; color:var(--text-muted)">Hoje às 10:00</span>
+                        </div>
+                        <div class="msg-text">${msg.text}</div>
+                    </div>
+                    
+                    <div class="msg-actions-trigger">
+                        <div class="action-btn" onclick="replyMsg('${msg.user}')" title="Responder">↩️</div>
+                        <div class="action-btn" onclick="toggleMenu('${d.id}')">...</div>
+                    </div>
+
+                    <div class="options-menu" id="menu-${d.id}">
+                        <div class="menu-item" onclick="copyText('${msg.text}')">Copiar Texto 📄</div>
+                        <div class="menu-item">Adicionar Reação ❤️</div>
+                        ${isOwner ? `<div class="menu-item delete" style="color:var(--danger)" onclick="deleteMessage('${d.id}')">Excluir Mensagem 🗑️</div>` : ''}
+                    </div>
+                `;
+                cont.appendChild(div);
             });
             cont.scrollTop = cont.scrollHeight;
         });
     }
 
+    // --- ENVIO ---
+
     document.getElementById('message-input').onkeypress = async (e) => {
-        if (e.key === 'Enter' && currentSrvId && e.target.value.trim() !== "") {
+        if (e.key === 'Enter' && e.target.value.trim() !== "") {
             const text = e.target.value; e.target.value = "";
-            await addDoc(collection(db, `mensagens_${currentSrvId}_${currentChanId}`), { 
-                text, 
-                user: auth.currentUser.email.split('@')[0], 
-                createdAt: serverTimestamp() 
+            await addDoc(collection(db, `mensagens_${currentSrvId}_${currentChanId}`), {
+                text,
+                user: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
+                uid: auth.currentUser.uid,
+                avatar: auth.currentUser.photoURL || '',
+                createdAt: serverTimestamp()
             });
         }
     };
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            document.getElementById('app').style.visibility = 'visible';
-            // Carregar dados básicos do user
-            const uDoc = await getDoc(doc(db, "usuarios", user.uid));
-            if(uDoc.exists()){
-                document.getElementById('user-tag').innerText = uDoc.data().nick || user.email.split('@')[0];
-                document.getElementById('user-avatar-small').style.backgroundImage = `url(${uDoc.data().avatar || ''})`;
-            }
-            // listenMyServers()... (restante da sua lógica original)
+    onAuthStateChanged(auth, (user) => { if (user) loadChat(); });
+
+    // Fechar menus ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.msg-actions-trigger')) {
+            document.querySelectorAll('.options-menu').forEach(m => m.style.display = 'none');
         }
     });
+
 </script>
 </body>
 </html>
