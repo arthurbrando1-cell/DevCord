@@ -1,429 +1,682 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nexa</title>
-<style>
-  :root {
-    --bg-tertiary: #202225;
-    --bg-secondary: #2f3136;
-    --bg-primary: #36393f;
-    --text-normal: #dcddde;
-    --text-muted: #72767d;
-    --brand: #5865F2;
-    --brand-hover: #4752C4;
-    --danger: #ed4245;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-  body { background: var(--bg-primary); color: var(--text-normal); height: 100vh; overflow: hidden; display: flex; }
-  
-  /* Auth Screen */
-  #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-primary); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-  .auth-box { background: var(--bg-secondary); padding: 32px; border-radius: 8px; width: 400px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-  .auth-box h2 { text-align: center; margin-bottom: 20px; color: #fff; }
-  .auth-box input { width: 100%; padding: 10px; margin-bottom: 15px; background: var(--bg-tertiary); border: 1px solid #000; color: #fff; border-radius: 4px; }
-  .auth-box button { width: 100%; padding: 10px; background: var(--brand); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
-  .auth-box button:hover { background: var(--brand-hover); }
-  .auth-toggle { text-align: center; color: var(--brand); cursor: pointer; font-size: 14px; }
-  
-  /* Main Layout */
-  #app { display: none; width: 100%; height: 100%; }
-  
-  .servers { width: 72px; background: var(--bg-tertiary); display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 8px; overflow-y: auto; }
-  .server-icon { width: 48px; height: 48px; background: var(--bg-primary); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; color: #fff; font-weight: bold; }
-  .server-icon:hover, .server-icon.active { border-radius: 16px; background: var(--brand); }
-  
-  .sidebar { width: 240px; background: var(--bg-secondary); display: flex; flex-direction: column; }
-  .sidebar-header { height: 48px; border-bottom: 1px solid #202225; display: flex; align-items: center; padding: 0 16px; font-weight: bold; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-  .channels { flex: 1; padding: 16px 8px; overflow-y: auto; }
-  .channel { padding: 6px 8px; margin-bottom: 2px; border-radius: 4px; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
-  .channel:hover, .channel.active { background: rgba(79,84,92,0.32); color: #fff; }
-  
-  .user-panel { height: 52px; background: #292b2f; display: flex; align-items: center; padding: 0 8px; gap: 8px; }
-  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--brand); display: flex; justify-content: center; align-items: center; color: #fff; font-weight: bold; position: relative; }
-  .status-dot { width: 10px; height: 10px; background: #3ba55c; border-radius: 50%; position: absolute; bottom: 0; right: 0; border: 2px solid #292b2f; }
-  .user-info { flex: 1; overflow: hidden; }
-  .user-name { font-size: 14px; font-weight: bold; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-  .user-status { font-size: 12px; color: var(--text-muted); }
-  .btn-icon { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 4px; }
-  .btn-icon:hover { background: rgba(79,84,92,0.32); color: #fff; }
-  
-  .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--bg-primary); }
-  .chat-header { height: 48px; border-bottom: 1px solid #202225; display: flex; align-items: center; padding: 0 16px; font-weight: bold; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-  .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-  .message { display: flex; gap: 16px; }
-  .msg-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--brand); display: flex; justify-content: center; align-items: center; color: #fff; font-weight: bold; flex-shrink: 0; }
-  .msg-content { display: flex; flex-direction: column; }
-  .msg-header { display: flex; align-items: baseline; gap: 8px; }
-  .msg-author { color: #fff; font-weight: 500; }
-  .msg-time { font-size: 12px; color: var(--text-muted); }
-  .msg-text { color: var(--text-normal); margin-top: 4px; word-break: break-word; }
-  
-  .chat-input-wrapper { padding: 0 16px 24px 16px; }
-  .chat-input { width: 100%; background: #40444b; border: none; border-radius: 8px; padding: 12px 16px; color: var(--text-normal); outline: none; }
-  
-  .members-sidebar { width: 240px; background: var(--bg-secondary); display: flex; flex-direction: column; }
-  .members-header { height: 48px; display: flex; align-items: center; padding: 0 16px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; font-size: 12px; }
-  .members-list { flex: 1; padding: 0 8px; overflow-y: auto; }
-  .member { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 4px; cursor: pointer; opacity: 0.8; }
-  .member:hover { background: rgba(79,84,92,0.32); opacity: 1; }
-  .member .avatar { width: 32px; height: 32px; }
-  .member-name { color: var(--text-muted); font-weight: 500; }
-  .member.online .member-name { color: #fff; }
-  
-  /* Settings Modal */
-  #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
-  .settings-box { background: var(--bg-primary); width: 500px; border-radius: 8px; padding: 24px; color: #fff; }
-  .settings-box h2 { margin-bottom: 20px; }
-  .settings-box input { width: 100%; padding: 10px; margin-bottom: 15px; background: var(--bg-tertiary); border: 1px solid #000; color: #fff; border-radius: 4px; }
-  .settings-box button { padding: 10px 20px; background: var(--brand); color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-  .settings-box button.danger { background: var(--danger); }
-  .settings-actions { display: flex; justify-content: space-between; margin-top: 20px; }
-  
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: var(--bg-secondary); }
-  ::-webkit-scrollbar-thumb { background: #202225; border-radius: 4px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Modelos 3D com IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --bg-panel: #1a1d24;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #2dd4bf33;
+            --accent: #2dd4bf;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar { width: 320px; background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
+        .header { padding: 20px; border-bottom: 1px solid var(--border); }
+        .header h1 { font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .header h1::before { content: ''; display: block; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
+        
+        /* Tabs */
+        .tabs { display: flex; border-bottom: 1px solid var(--border); }
+        .tab { flex: 1; padding: 12px 0; text-align: center; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; transition: all 0.3s; border-bottom: 2px solid transparent; }
+        .tab:hover { color: var(--text-main); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        
+        /* Panels */
+        .panel-container { flex: 1; overflow-y: auto; padding: 20px; }
+        .panel { display: none; animation: fadeIn 0.3s ease; }
+        .panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Forms & Inputs */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-muted); }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: white; outline: none; transition: border 0.3s; }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus { border-color: var(--primary); }
+        input[type="range"] { width: 100%; accent-color: var(--primary); }
+        
+        /* Buttons */
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-outline:hover { background: rgba(99, 102, 241, 0.1); }
+        
+        /* Upload Area */
+        .upload-area { border: 2px dashed var(--border); border-radius: 8px; padding: 30px 20px; text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 15px; }
+        .upload-area:hover, .upload-area.dragover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
+        .upload-icon { font-size: 2rem; color: var(--primary); margin-bottom: 10px; }
+        .preview-container { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+        
+        /* Main Area */
+        .main-area { flex: 1; position: relative; background: radial-gradient(circle at center, #1a1d24 0%, #0f1115 100%); }
+        #canvas-container { width: 100%; height: 100%; }
+        
+        /* Overlay / Loading */
+        .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 17, 21, 0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .overlay.active { opacity: 1; pointer-events: all; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(45, 212, 191, 0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Toolbar */
+        .toolbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--bg-panel); padding: 10px 20px; border-radius: 30px; border: 1px solid var(--border); display: flex; gap: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .tool-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; transition: color 0.3s; }
+        .tool-btn:hover, .tool-btn.active { color: var(--accent); }
+    </style>
 </head>
 <body>
 
-<!-- Auth Screen -->
-<div id="auth-screen">
-  <div class="auth-box">
-    <h2 id="auth-title">Bem-vindo ao Nexa</h2>
-    <form id="auth-form">
-      <input type="text" id="auth-name" placeholder="Nome de usuário" style="display:none;">
-      <input type="email" id="auth-email" placeholder="E-mail" required>
-      <input type="password" id="auth-password" placeholder="Senha" required>
-      <button type="submit" id="auth-btn">Entrar</button>
-    </form>
-    <div class="auth-toggle" id="auth-toggle">Precisa de uma conta? Registre-se</div>
-  </div>
-</div>
-
-<!-- Settings Modal -->
-<div id="settings-modal">
-  <div class="settings-box">
-    <h2>Configurações</h2>
-    <label>Nome de Usuário</label>
-    <input type="text" id="settings-name">
-    <div class="settings-actions">
-      <button id="settings-save">Salvar</button>
-      <button id="settings-close" style="background: #4f545c;">Fechar</button>
-      <button id="settings-logout" class="danger">Sair</button>
-    </div>
-  </div>
-</div>
-
-<!-- Main App -->
-<div id="app">
-  <!-- Servers -->
-  <div class="servers">
-    <div class="server-icon active">N</div>
-  </div>
-  
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-header">Nexa Server</div>
-    <div class="channels" id="channels-list">
-      <div class="channel active" data-id="global"># global</div>
-      <div class="channel" data-id="geral"># geral</div>
-      <div class="channel" data-id="jogos"># jogos</div>
-      <div class="channel" data-id="programacao"># programação</div>
-    </div>
-    <div class="user-panel">
-      <div class="avatar" id="my-avatar">U<div class="status-dot"></div></div>
-      <div class="user-info">
-        <div class="user-name" id="my-name">User</div>
-        <div class="user-status">Online</div>
-      </div>
-      <button class="btn-icon" id="btn-settings" title="Configurações">⚙️</button>
-    </div>
-  </div>
-  
-  <!-- Chat -->
-  <div class="chat-area">
-    <div class="chat-header" id="current-channel-name"># global</div>
-    <div class="messages" id="messages-container"></div>
-    <div class="chat-input-wrapper">
-      <form id="chat-form">
-        <input type="text" class="chat-input" id="chat-input" placeholder="Conversar em #global" autocomplete="off">
-      </form>
-    </div>
-  </div>
-  
-  <!-- Members -->
-  <div class="members-sidebar">
-    <div class="members-header">Online — <span id="online-count">0</span></div>
-    <div class="members-list" id="members-list"></div>
-  </div>
-</div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-  import { getDatabase, ref, push, onValue, set, onDisconnect, serverTimestamp, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyD6mo_rK6_4-RtaR8Wzg9UxWy7HaqnKNE8",
-    authDomain: "devcord-4dcf6.firebaseapp.com",
-    databaseURL: "https://devcord-4dcf6-default-rtdb.firebaseio.com",
-    projectId: "devcord-4dcf6",
-    storageBucket: "devcord-4dcf6.firebasestorage.app",
-    messagingSenderId: "168388878048",
-    appId: "1:168388878048:web:c4b9628253e4b46c077a85"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
-
-  // State
-  let currentUser = null;
-  let currentChannel = 'global';
-  let isLoginMode = true;
-  let messagesRef = null;
-  let messagesListener = null;
-
-  // DOM Elements
-  const authScreen = document.getElementById('auth-screen');
-  const appScreen = document.getElementById('app');
-  const authForm = document.getElementById('auth-form');
-  const authTitle = document.getElementById('auth-title');
-  const authBtn = document.getElementById('auth-btn');
-  const authToggle = document.getElementById('auth-toggle');
-  const authName = document.getElementById('auth-name');
-  const authEmail = document.getElementById('auth-email');
-  const authPassword = document.getElementById('auth-password');
-  
-  const myName = document.getElementById('my-name');
-  const myAvatar = document.getElementById('my-avatar');
-  const channelsList = document.getElementById('channels-list');
-  const currentChannelName = document.getElementById('current-channel-name');
-  const messagesContainer = document.getElementById('messages-container');
-  const chatForm = document.getElementById('chat-form');
-  const chatInput = document.getElementById('chat-input');
-  const membersList = document.getElementById('members-list');
-  const onlineCount = document.getElementById('online-count');
-  
-  const settingsModal = document.getElementById('settings-modal');
-  const btnSettings = document.getElementById('btn-settings');
-  const settingsClose = document.getElementById('settings-close');
-  const settingsLogout = document.getElementById('settings-logout');
-  const settingsSave = document.getElementById('settings-save');
-  const settingsName = document.getElementById('settings-name');
-
-  // Audio notification
-  const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-
-  // Auth Toggle
-  authToggle.addEventListener('click', () => {
-    isLoginMode = !isLoginMode;
-    authTitle.textContent = isLoginMode ? 'Bem-vindo de volta!' : 'Criar uma conta';
-    authBtn.textContent = isLoginMode ? 'Entrar' : 'Registrar';
-    authToggle.textContent = isLoginMode ? 'Precisa de uma conta? Registre-se' : 'Já tem uma conta? Entre';
-    authName.style.display = isLoginMode ? 'none' : 'block';
-    authName.required = !isLoginMode;
-  });
-
-  // Auth Submit
-  authForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = authEmail.value;
-    const password = authPassword.value;
-    const name = authName.value;
-    
-    try {
-      if (isLoginMode) {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCred.user, { displayName: name });
-        await set(ref(db, `users/${userCred.user.uid}`), {
-          name: name,
-          email: email
-        });
-      }
-    } catch (error) {
-      alert(error.message);
-    }
-  });
-
-  // Auth State Observer
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      currentUser = user;
-      authScreen.style.display = 'none';
-      appScreen.style.display = 'flex';
-      
-      const displayName = user.displayName || user.email.split('@')[0];
-      myName.textContent = displayName;
-      myAvatar.innerHTML = `${displayName.charAt(0).toUpperCase()}<div class="status-dot"></div>`;
-      settingsName.value = displayName;
-      
-      setupPresence();
-      loadChannel(currentChannel);
-      listenToMembers();
-    } else {
-      currentUser = null;
-      authScreen.style.display = 'flex';
-      appScreen.style.display = 'none';
-      if (messagesListener) messagesListener();
-    }
-  });
-
-  // Presence System
-  function setupPresence() {
-    const userStatusRef = ref(db, `/status/${currentUser.uid}`);
-    const connectedRef = ref(db, '.info/connected');
-    
-    onValue(connectedRef, (snap) => {
-      if (snap.val() === true) {
-        const status = {
-          state: 'online',
-          last_changed: serverTimestamp(),
-          name: currentUser.displayName || currentUser.email.split('@')[0]
-        };
-        onDisconnect(userStatusRef).set({
-          state: 'offline',
-          last_changed: serverTimestamp(),
-          name: currentUser.displayName || currentUser.email.split('@')[0]
-        }).then(() => {
-          set(userStatusRef, status);
-        });
-      }
-    });
-  }
-
-  // Load Channel
-  function loadChannel(channelId) {
-    currentChannel = channelId;
-    currentChannelName.textContent = `# ${channelId}`;
-    chatInput.placeholder = `Conversar em #${channelId}`;
-    
-    document.querySelectorAll('.channel').forEach(c => c.classList.remove('active'));
-    document.querySelector(`.channel[data-id="${channelId}"]`).classList.add('active');
-    
-    messagesContainer.innerHTML = '';
-    
-    if (messagesListener) messagesListener(); // unsubscribe previous
-    
-    const q = query(ref(db, `messages/${channelId}`), limitToLast(50));
-    messagesListener = onValue(q, (snapshot) => {
-      messagesContainer.innerHTML = '';
-      let isNewMessage = false;
-      snapshot.forEach((child) => {
-        const msg = child.val();
-        appendMessage(msg);
-        isNewMessage = true;
-      });
-      if (isNewMessage) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        // Play sound if not first load (optional enhancement)
-      }
-    });
-  }
-
-  // Append Message
-  function appendMessage(msg) {
-    const div = document.createElement('div');
-    div.className = 'message';
-    const initial = msg.authorName ? msg.authorName.charAt(0).toUpperCase() : '?';
-    const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    
-    div.innerHTML = `
-      <div class="msg-avatar">${initial}</div>
-      <div class="msg-content">
-        <div class="msg-header">
-          <span class="msg-author">${msg.authorName}</span>
-          <span class="msg-time">${time}</span>
+    <div class="sidebar">
+        <div class="header">
+            <h1>Nexus3D Gen</h1>
         </div>
-        <div class="msg-text">${escapeHTML(msg.text)}</div>
-      </div>
-    `;
-    messagesContainer.appendChild(div);
-  }
-
-  // Send Message
-  chatForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const text = chatInput.value.trim();
-    if (!text || !currentUser) return;
+        
+        <div class="tabs">
+            <div class="tab active" data-target="upload">Upload</div>
+            <div class="tab" data-target="editor">Editor</div>
+            <div class="tab" data-target="settings">Config</div>
+            <div class="tab" data-target="export">Exportar</div>
+        </div>
+        
+        <div class="panel-container">
+            <!-- Upload Panel -->
+            <div class="panel active" id="upload">
+                <div class="form-group">
+                    <label>Upload de Imagem (Frente/Referência)</label>
+                    <div class="upload-area" id="drop-zone">
+                        <div class="upload-icon">📁</div>
+                        <p>Arraste uma imagem ou clique para selecionar</p>
+                        <input type="file" id="file-input" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="preview-container" id="preview-container"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Ou cole a URL da imagem</label>
+                    <input type="text" id="image-url" placeholder="https://exemplo.com/imagem.jpg">
+                </div>
+                
+                <button class="btn" id="btn-generate">
+                    <span>✨</span> Gerar Modelo 3D
+                </button>
+            </div>
+            
+            <!-- Editor Panel -->
+            <div class="panel" id="editor">
+                <div class="form-group">
+                    <label>Resolução da Malha</label>
+                    <input type="range" id="mesh-resolution" min="32" max="256" value="128" step="32">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">
+                        <span>Baixa</span><span>Alta</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Profundidade (Extrusão)</label>
+                    <input type="range" id="mesh-depth" min="1" max="50" value="15">
+                </div>
+                
+                <div class="form-group">
+                    <label>Suavização (Smoothing)</label>
+                    <input type="range" id="mesh-smooth" min="0" max="10" value="3">
+                </div>
+                
+                <button class="btn btn-outline" id="btn-update-mesh" style="margin-top: 10px;">
+                    Atualizar Malha
+                </button>
+            </div>
+            
+            <!-- Settings Panel -->
+            <div class="panel" id="settings">
+                <div class="form-group">
+                    <label>Modo de Visualização</label>
+                    <select id="view-mode">
+                        <option value="solid">Sólido</option>
+                        <option value="wireframe">Wireframe</option>
+                        <option value="textured" selected>Texturizado (Original)</option>
+                        <option value="normals">Normais</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Cor do Material (Modo Sólido)</label>
+                    <input type="color" id="material-color" value="#cccccc" style="width: 100%; height: 40px; padding: 0; cursor: pointer;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Intensidade da Luz</label>
+                    <input type="range" id="light-intensity" min="0" max="2" step="0.1" value="1">
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="auto-rotate" checked>
+                    <label style="margin: 0;">Rotação Automática</label>
+                </div>
+            </div>
+            
+            <!-- Export Panel -->
+            <div class="panel" id="export">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+                    Exporte seu modelo gerado para uso em outras aplicações 3D, jogos ou impressão 3D.
+                </p>
+                
+                <div class="form-group">
+                    <button class="btn" id="btn-export-glb" style="margin-bottom: 10px;">
+                        Exportar .GLB (Recomendado)
+                    </button>
+                    <button class="btn btn-outline" id="btn-export-obj" style="margin-bottom: 10px;">
+                        Exportar .OBJ
+                    </button>
+                    <button class="btn btn-outline" id="btn-export-stl">
+                        Exportar .STL (Impressão 3D)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     
-    chatInput.value = '';
-    
-    await push(ref(db, `messages/${currentChannel}`), {
-      text: text,
-      authorId: currentUser.uid,
-      authorName: currentUser.displayName || currentUser.email.split('@')[0],
-      timestamp: Date.now()
-    });
-  });
+    <div class="main-area">
+        <div id="canvas-container"></div>
+        
+        <div class="overlay" id="loading-overlay">
+            <div class="spinner"></div>
+            <h3 id="loading-text">Processando imagem com IA...</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">Isso pode levar alguns segundos</p>
+        </div>
+        
+        <div class="toolbar">
+            <button class="tool-btn" id="tool-reset" title="Resetar Câmera">🏠</button>
+            <button class="tool-btn active" id="tool-grid" title="Alternar Grade">▦</button>
+        </div>
+    </div>
 
-  // Listen to Members
-  function listenToMembers() {
-    onValue(ref(db, 'status'), (snapshot) => {
-      membersList.innerHTML = '';
-      let count = 0;
-      snapshot.forEach((child) => {
-        const user = child.val();
-        if (user.state === 'online') {
-          count++;
-          const div = document.createElement('div');
-          div.className = 'member online';
-          const initial = user.name ? user.name.charAt(0).toUpperCase() : '?';
-          div.innerHTML = `
-            <div class="avatar">${initial}<div class="status-dot"></div></div>
-            <div class="member-name">${user.name}</div>
-          `;
-          membersList.appendChild(div);
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+        import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
+        import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter.js';
+        import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
+
+        // --- App State ---
+        const state = {
+            imageSrc: null,
+            mesh: null,
+            texture: null,
+            isGenerating: false,
+            settings: {
+                resolution: 128,
+                depth: 15,
+                smooth: 3,
+                viewMode: 'textured',
+                color: '#cccccc',
+                autoRotate: true,
+                showGrid: true
+            }
+        };
+
+        // --- UI Elements ---
+        const tabs = document.querySelectorAll('.tab');
+        const panels = document.querySelectorAll('.panel');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const previewContainer = document.getElementById('preview-container');
+        const urlInput = document.getElementById('image-url');
+        const btnGenerate = document.getElementById('btn-generate');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(0, 0, 100);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+        
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(50, 50, 50);
+        scene.add(dirLight);
+        
+        const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        backLight.position.set(-50, -50, -50);
+        scene.add(backLight);
+        
+        // Helpers
+        const gridHelper = new THREE.GridHelper(100, 20, 0x2dd4bf, 0x444444);
+        gridHelper.position.y = -20;
+        gridHelper.material.opacity = 0.2;
+        gridHelper.material.transparent = true;
+        scene.add(gridHelper);
+        
+        // Default Object (Placeholder)
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x2dd4bf, 
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+        });
+        let currentMesh = new THREE.Mesh(geometry, material);
+        scene.add(currentMesh);
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            if (state.settings.autoRotate && currentMesh) {
+                currentMesh.rotation.y += 0.005;
+            }
+            controls.update();
+            renderer.render(scene, camera);
         }
-      });
-      onlineCount.textContent = count;
-    });
-  }
+        animate();
 
-  // Channel Switching
-  channelsList.addEventListener('click', (e) => {
-    const channelEl = e.target.closest('.channel');
-    if (channelEl) {
-      loadChannel(channelEl.dataset.id);
-    }
-  });
+        // --- Resize Handler ---
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
 
-  // Settings
-  btnSettings.addEventListener('click', () => settingsModal.style.display = 'flex');
-  settingsClose.addEventListener('click', () => settingsModal.style.display = 'none');
-  
-  settingsLogout.addEventListener('click', () => {
-    settingsModal.style.display = 'none';
-    signOut(auth);
-  });
-  
-  settingsSave.addEventListener('click', async () => {
-    const newName = settingsName.value.trim();
-    if (newName && currentUser) {
-      await updateProfile(currentUser, { displayName: newName });
-      await set(ref(db, `/status/${currentUser.uid}/name`), newName);
-      myName.textContent = newName;
-      myAvatar.innerHTML = `${newName.charAt(0).toUpperCase()}<div class="status-dot"></div>`;
-      settingsModal.style.display = 'none';
-    }
-  });
+        // --- UI Interactions ---
+        
+        // Tabs
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                panels.forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.target).classList.add('active');
+            });
+        });
 
-  // Utility
-  function escapeHTML(str) {
-    return str.replace(/[&<>'"]/g, 
-      tag => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        "'": '&#39;',
-        '"': '&quot;'
-      }[tag])
-    );
-  }
-</script>
+        // File Upload
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        urlInput.addEventListener('change', (e) => {
+            if (e.target.value) {
+                state.imageSrc = e.target.value;
+                updatePreview(state.imageSrc);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state.imageSrc = e.target.result;
+                updatePreview(state.imageSrc);
+                urlInput.value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updatePreview(src) {
+            previewContainer.innerHTML = `<img src="${src}" class="preview-img" alt="Preview">`;
+        }
+
+        // --- 3D Generation Logic (Heightmap Simulation) ---
+        
+        btnGenerate.addEventListener('click', () => {
+            if (!state.imageSrc) {
+                alert('Por favor, faça upload de uma imagem primeiro.');
+                return;
+            }
+            generateModel();
+        });
+
+        document.getElementById('btn-update-mesh').addEventListener('click', () => {
+            if (state.imageSrc) generateModel();
+        });
+
+        function generateModel() {
+            loadingOverlay.classList.add('active');
+            
+            // Update settings from UI
+            state.settings.resolution = parseInt(document.getElementById('mesh-resolution').value);
+            state.settings.depth = parseInt(document.getElementById('mesh-depth').value);
+            state.settings.smooth = parseInt(document.getElementById('mesh-smooth').value);
+            
+            // Simulate AI processing time
+            setTimeout(() => {
+                processImageToMesh(state.imageSrc);
+            }, 500);
+        }
+
+        function processImageToMesh(imgSrc) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                // Create canvas to read pixel data
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                
+                // Use resolution setting
+                const res = state.settings.resolution;
+                canvas.width = res;
+                canvas.height = res;
+                
+                // Draw image to canvas
+                ctx.drawImage(img, 0, 0, res, res);
+                const imgData = ctx.getImageData(0, 0, res, res).data;
+                
+                // Create Box Geometry for thickness
+                const depthMultiplier = state.settings.depth;
+                const geometry = new THREE.BoxGeometry(40, 40, depthMultiplier, res - 1, res - 1, 1);
+                const vertices = geometry.attributes.position.array;
+                const uvs = geometry.attributes.uv.array;
+                
+                // Apply heightmap based on brightness
+                const heights = new Float32Array(res * res);
+                
+                // Process image data to extract heights and optionally remove black background
+                const processedCanvas = document.createElement('canvas');
+                processedCanvas.width = res;
+                processedCanvas.height = res;
+                const pCtx = processedCanvas.getContext('2d');
+                const pImgData = pCtx.createImageData(res, res);
+                
+                for (let i = 0, j = 0; i < imgData.length; i += 4, j++) {
+                    const r = imgData[i];
+                    const g = imgData[i+1];
+                    const b = imgData[i+2];
+                    let a = imgData[i+3];
+                    
+                    // Simple black background removal if no alpha channel is present
+                    if (a === 255 && r < 15 && g < 15 && b < 15) {
+                        a = 0;
+                    }
+                    
+                    pImgData.data[i] = r;
+                    pImgData.data[i+1] = g;
+                    pImgData.data[i+2] = b;
+                    pImgData.data[i+3] = a;
+                    
+                    if (a < 10) {
+                        heights[j] = 0;
+                    } else {
+                        const brightness = (r + g + b) / (3 * 255);
+                        heights[j] = brightness * depthMultiplier;
+                    }
+                }
+                
+                pCtx.putImageData(pImgData, 0, 0);
+                const processedImgSrc = processedCanvas.toDataURL();
+                
+                // Smoothing pass
+                const smoothIterations = state.settings.smooth;
+                let currentHeights = heights;
+                for (let iter = 0; iter < smoothIterations; iter++) {
+                    const nextHeights = new Float32Array(res * res);
+                    for (let y = 0; y < res; y++) {
+                        for (let x = 0; x < res; x++) {
+                            let sum = 0;
+                            let count = 0;
+                            for (let dy = -1; dy <= 1; dy++) {
+                                for (let dx = -1; dx <= 1; dx++) {
+                                    const nx = x + dx;
+                                    const ny = y + dy;
+                                    if (nx >= 0 && nx < res && ny >= 0 && ny < res) {
+                                        sum += currentHeights[ny * res + nx];
+                                        count++;
+                                    }
+                                }
+                            }
+                            nextHeights[y * res + x] = sum / count;
+                        }
+                    }
+                    currentHeights = nextHeights;
+                }
+                
+                for (let i = 0; i < vertices.length / 3; i++) {
+                    const vx = vertices[i * 3];
+                    const vy = vertices[i * 3 + 1];
+                    const vz = vertices[i * 3 + 2];
+                    
+                    // Map physical coordinates to pixel coordinates
+                    // vx goes from -20 to 20, vy goes from -20 to 20
+                    const px = Math.min(Math.max(Math.floor((vx + 20) / 40 * res), 0), res - 1);
+                    const py = Math.min(Math.max(Math.floor((20 - vy) / 40 * res), 0), res - 1);
+                    
+                    const height = currentHeights[py * res + px];
+                    
+                    if (vz > 0) {
+                        vertices[i * 3 + 2] = height / 2;
+                    } else {
+                        vertices[i * 3 + 2] = -height / 2;
+                    }
+                    
+                    // Update UVs to match physical coordinates
+                    uvs[i * 2] = (vx + 20) / 40;
+                    uvs[i * 2 + 1] = (vy + 20) / 40;
+                }
+                
+                geometry.computeVertexNormals();
+                
+                // Create Texture
+                const textureLoader = new THREE.TextureLoader();
+                state.texture = textureLoader.load(processedImgSrc);
+                state.texture.colorSpace = THREE.SRGBColorSpace;
+                
+                // Create Alpha Texture
+                const alphaCanvas = document.createElement('canvas');
+                alphaCanvas.width = res;
+                alphaCanvas.height = res;
+                const aCtx = alphaCanvas.getContext('2d');
+                const aImgData = aCtx.createImageData(res, res);
+                for (let i = 0; i < pImgData.data.length; i += 4) {
+                    const a = pImgData.data[i+3];
+                    aImgData.data[i] = a;
+                    aImgData.data[i+1] = a;
+                    aImgData.data[i+2] = a;
+                    aImgData.data[i+3] = 255;
+                }
+                aCtx.putImageData(aImgData, 0, 0);
+                state.alphaTexture = textureLoader.load(alphaCanvas.toDataURL());
+                
+                // Create Material
+                updateMaterial(geometry);
+                
+                loadingOverlay.classList.remove('active');
+                
+                // Switch to Editor tab
+                tabs[1].click();
+            };
+            img.onerror = () => {
+                alert('Erro ao carregar a imagem. Tente outra.');
+                loadingOverlay.classList.remove('active');
+            };
+            img.src = imgSrc;
+        }
+
+        function updateMaterial(newGeometry = null) {
+            if (currentMesh) {
+                scene.remove(currentMesh);
+                if (!newGeometry) newGeometry = currentMesh.geometry;
+            }
+            
+            const mode = document.getElementById('view-mode').value;
+            const color = document.getElementById('material-color').value;
+            
+            let material;
+            
+            switch(mode) {
+                case 'wireframe':
+                    material = new THREE.MeshStandardMaterial({ 
+                        color: color, 
+                        wireframe: true,
+                        transparent: true,
+                        alphaTest: 0.1,
+                        alphaMap: state.alphaTexture
+                    });
+                    break;
+                case 'solid':
+                    material = new THREE.MeshStandardMaterial({ 
+                        color: color, 
+                        roughness: 0.4, 
+                        metalness: 0.1,
+                        transparent: true,
+                        alphaTest: 0.1,
+                        alphaMap: state.alphaTexture,
+                        side: THREE.DoubleSide
+                    });
+                    break;
+                case 'normals':
+                    material = new THREE.MeshNormalMaterial({
+                        transparent: true,
+                        alphaTest: 0.1,
+                        // MeshNormalMaterial doesn't support alphaMap, so we just use the geometry as is.
+                        // The flat plane will be visible, but it's a debug mode anyway.
+                        side: THREE.DoubleSide
+                    });
+                    break;
+                case 'textured':
+                default:
+                    material = new THREE.MeshStandardMaterial({ 
+                        map: state.texture,
+                        roughness: 0.5,
+                        metalness: 0.1,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        alphaTest: 0.1
+                    });
+                    break;
+            }
+            
+            currentMesh = new THREE.Mesh(newGeometry, material);
+            
+            // Center the mesh
+            newGeometry.computeBoundingBox();
+            const centerOffset = -0.5 * (newGeometry.boundingBox.max.z - newGeometry.boundingBox.min.z);
+            currentMesh.position.z = centerOffset;
+            
+            scene.add(currentMesh);
+        }
+
+        // --- Settings Interactions ---
+        
+        document.getElementById('view-mode').addEventListener('change', () => updateMaterial());
+        document.getElementById('material-color').addEventListener('input', () => {
+            if (document.getElementById('view-mode').value === 'solid' || document.getElementById('view-mode').value === 'wireframe') {
+                updateMaterial();
+            }
+        });
+        
+        document.getElementById('light-intensity').addEventListener('input', (e) => {
+            dirLight.intensity = parseFloat(e.target.value);
+        });
+        
+        document.getElementById('auto-rotate').addEventListener('change', (e) => {
+            state.settings.autoRotate = e.target.checked;
+        });
+        
+        document.getElementById('tool-grid').addEventListener('click', (e) => {
+            state.settings.showGrid = !state.settings.showGrid;
+            gridHelper.visible = state.settings.showGrid;
+            e.target.classList.toggle('active');
+        });
+        
+        document.getElementById('tool-reset').addEventListener('click', () => {
+            controls.reset();
+            camera.position.set(0, 0, 100);
+            if (currentMesh) {
+                currentMesh.rotation.set(0, 0, 0);
+            }
+        });
+
+        // --- Export Logic ---
+        
+        function downloadFile(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.style.display = 'none';
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('btn-export-glb').addEventListener('click', () => {
+            if (!currentMesh || currentMesh.geometry.type === 'TorusKnotGeometry') {
+                alert('Gere um modelo primeiro!'); return;
+            }
+            const exporter = new GLTFExporter();
+            exporter.parse(
+                scene,
+                function (gltf) {
+                    const output = JSON.stringify(gltf, null, 2);
+                    const blob = new Blob([output], { type: 'text/plain' });
+                    downloadFile(blob, 'modelo.gltf');
+                },
+                function (error) { console.error(error); alert('Erro ao exportar GLTF'); },
+                { binary: false }
+            );
+        });
+
+        document.getElementById('btn-export-obj').addEventListener('click', () => {
+            if (!currentMesh || currentMesh.geometry.type === 'TorusKnotGeometry') {
+                alert('Gere um modelo primeiro!'); return;
+            }
+            const exporter = new OBJExporter();
+            const result = exporter.parse(scene);
+            const blob = new Blob([result], { type: 'text/plain' });
+            downloadFile(blob, 'modelo.obj');
+        });
+
+        document.getElementById('btn-export-stl').addEventListener('click', () => {
+            if (!currentMesh || currentMesh.geometry.type === 'TorusKnotGeometry') {
+                alert('Gere um modelo primeiro!'); return;
+            }
+            const exporter = new STLExporter();
+            const result = exporter.parse(scene);
+            const blob = new Blob([result], { type: 'text/plain' });
+            downloadFile(blob, 'modelo.stl');
+        });
+
+    </script>
 </body>
 </html>
